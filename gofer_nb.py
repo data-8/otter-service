@@ -34,8 +34,9 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         section = notebook['metadata']['section']
         lab = notebook['metadata']['lab']
 
+        timestamp = timestamp(time.time())
         # save notebook submission with user id and time stamp
-        submission_file = "{}_{}_{}_{}.ipynb".format(user['name'], section, lab, str(time.time()))
+        submission_file = "{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
         with open(submission_file, 'w') as outfile:
             json.dump(notebook, outfile)
 
@@ -49,8 +50,9 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         # Write the grade to a local csv file first
         # TODO: Find if there is a better way to do this atomically
 
+        timestamp =
         with open("grades.csv", "a+") as gradebook:
-            gradebook.write("{}, {}, {}, {}\n".format(user['name'], grade, section, lab))
+            gradebook.write("{}, {}, {}, {}, {}\n".format(user['name'], grade, section, lab, timestamp))
 
         # post grade to EdX
         with open('x19_config.json', 'r') as fname:
