@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import time
+import sqlite3
 import tornado.web
 import tornado.httpserver
 import tornado.ioloop
@@ -15,54 +16,25 @@ from hashlib import sha1
 from jupyterhub.services.auth import HubAuthenticated
 from lxml import etree
 from oauthlib.oauth1.rfc5849 import signature, parameters
+from sqlite3 import Error
 
 prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 
 
-class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
-
-    async def get(self):
-        self.write("This is a post only page. You probably shouldn't be here!")
-        self.finish()
-
-    async def post(self):
-        """Accept notebook submissions, saves, then grades them"""
-        user = self.get_current_user()
-        req_data = tornado.escape.json_decode(self.request.body)
-        # in the future, assignment should be metadata in notebook
-        notebook = req_data['nb']
-        section = notebook['metadata']['section']
-        lab = notebook['metadata']['lab']
-
-        timestamp = timestamp(time.time())
-        # save notebook submission with user id and time stamp
-        submission_file = "{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
-        with open(submission_file, 'w') as outfile:
-            json.dump(notebook, outfile)
-
-        # Let user know their submission was received
-        self.write("User submission has been received. Grade will be posted to the gradebook once it's finished running!")
-        self.finish()
-
-        # Grade lab
-        grade = await grade_lab(submission_file, section, lab)
-
-        # Write the grade to a local csv file first
-        # TODO: Find if there is a better way to do this atomically
-
-        timestamp =
-        with open("grades.csv", "a+") as gradebook:
-            gradebook.write("{}, {}, {}, {}, {}\n".format(user['name'], grade, section, lab, timestamp))
-
-        # post grade to EdX
-        with open('x19_config.json', 'r') as fname:
-            # Course DEPENDENT configuration file
-            # Should contain page for hitting the gradebook (outcomes_url)
-            # as well as resource IDs for assignments
-            # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
-            # Make sure that it's placed in the working directory of the service (pwdx <PID>)
-            course_config = json.load(fname)
-        await post_grade(user['name'], grade, course_config["sourcedid"][section][lab], course_config["outcomes_url"])
+def write_grade(grade_info, db_fname="gradebook.db"):
+    sql_cmd = """INSERT INTO grades(userid, grade, section, lab, timestamp)
+                 VALUES(?,?,?,?,?)"""
+    try:
+        conn = sqlite3.connect(db_fname)
+        # context manager here takes care of conn.commit()
+        with conn:
+            conn.execute(sql_cmd, grade_info)
+    except Error as e:
+        print(e)
+        print("Error inserting into database for the following record")
+        print(grade_info)
+    finally:
+        conn.close()
 
 
 async def post_grade(user_id, grade, sourcedid, outcomes_url):
@@ -143,6 +115,49 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
 
     if code_major != 'success':
         raise GradePostException(response)
+
+
+class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
+
+    async def get(self):
+        self.write("This is a post only page. You probably shouldn't be here!")
+        self.finish()
+
+    async def post(self):
+        """Accept notebook submissions, saves, then grades them"""
+        user = self.get_current_user()
+        req_data = tornado.escape.json_decode(self.request.body)
+        # in the future, assignment should be metadata in notebook
+        notebook = req_data['nb']
+        section = notebook['metadata']['section']
+        lab = notebook['metadata']['lab']
+
+        timestamp = str(time.time())
+        # save notebook submission with user id and time stamp
+        submission_file = "{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
+        with open(submission_file, 'w') as outfile:
+            json.dump(notebook, outfile)
+
+        # Let user know their submission was received
+        self.write("User submission has been received. Grade will be posted to the gradebook once it's finished running!")
+        self.finish()
+
+        # Grade lab
+        grade = await grade_lab(submission_file, section, lab)
+
+        # Write the grade to a sqlite database
+        grade_info = (user['name'], grade, section, lab, timestamp)
+        write_grade(grade_info)
+
+        # post grade to EdX
+        with open('x19_config.json', 'r') as fname:
+            # Course DEPENDENT configuration file
+            # Should contain page for hitting the gradebook (outcomes_url)
+            # as well as resource IDs for assignments
+            # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
+            # Make sure that it's placed in the working directory of the service (pwdx <PID>)
+            course_config = json.load(fname)
+        await post_grade(user['name'], grade, course_config["sourcedid"][section][lab], course_config["outcomes_url"])
 
 
 if __name__ == '__main__':
