@@ -150,7 +150,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         write_grade(grade_info)
 
         # post grade to EdX
-        with open('x19_config.json', 'r') as fname:
+        with open('/home/vipasu/x19_config.json', 'r') as fname:
             # Course DEPENDENT configuration file
             # Should contain page for hitting the gradebook (outcomes_url)
             # as well as resource IDs for assignments
@@ -163,7 +163,6 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
 if __name__ == '__main__':
     tornado.options.parse_command_line()
     app = tornado.web.Application([(prefix, GoferHandler)])
-    print(prefix)
 
     app.listen(10101)
 

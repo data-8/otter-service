@@ -3,7 +3,7 @@ import async_timeout
 
 
 async def grade_lab(submission, section='3', lab='lab01'):
-    lab_container_path_template = '/srv/repo/materials/x18/lab/{section}/{lab}/{lab}.ipynb'
+    lab_container_path_template = '/srv/repo/materials/x19/lab/{section}/{lab}/{lab}.ipynb'
     grader_image = 'gofer'
     command = [
             'docker', 'run',
