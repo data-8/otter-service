@@ -134,7 +134,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
 
         timestamp = str(time.time())
         # save notebook submission with user id and time stamp
-        submission_file = "{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
+        submission_file = "submissions/{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
         with open(submission_file, 'w') as outfile:
             json.dump(notebook, outfile)
 
@@ -163,6 +163,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
 if __name__ == '__main__':
     tornado.options.parse_command_line()
     app = tornado.web.Application([(prefix, GoferHandler)])
+    print(prefix)
 
     app.listen(10101)
 
