@@ -19,7 +19,7 @@ def create_table(conn):
     Feel free to customize this if you store different metadata (e.g. section/lab).
     """
     create_sql_table_stmt = """ CREATE TABLE IF NOT EXISTS grades (
-                                        userid text PRIMARY KEY,
+                                        userid text,
                                         grade real,
                                         section text,
                                         lab text,
