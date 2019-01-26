@@ -37,6 +37,11 @@ def write_grade(grade_info, db_fname="gradebook.db"):
         conn.close()
 
 
+class GradePostException(Exception):
+    def __init__(self, response=None):
+        self.response = response
+
+
 async def post_grade(user_id, grade, sourcedid, outcomes_url):
     # TODO: extract this into a real library with real XML parsing
     # WARNING: You can use this only with data you trust! Beware, etc.
@@ -134,7 +139,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
 
         timestamp = str(time.time())
         # save notebook submission with user id and time stamp
-        submission_file = "submissions/{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
+        submission_file = "/home/vipasu/gofer_service/submissions/{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
         with open(submission_file, 'w') as outfile:
             json.dump(notebook, outfile)
 
@@ -157,7 +162,9 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
             # Make sure that it's placed in the working directory of the service (pwdx <PID>)
             course_config = json.load(fname)
-        await post_grade(user['name'], grade, course_config["sourcedid"][section][lab], course_config["outcomes_url"])
+        await post_grade(user['name'], grade,
+                         course_config["sourcedid"][section][lab],
+                         course_config["outcomes_url"][section])
 
 
 if __name__ == '__main__':
