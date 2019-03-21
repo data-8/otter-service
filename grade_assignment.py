@@ -41,7 +41,7 @@ async def grade_assignment(submission, section='3', assignment='lab01'):
                 return False
             if not line.startswith('WARNING:'):
                 print(line)
-                raise Exception("Found unrecognized output in stderr from {}, halting".format(' '.join(command)))
+                raise Exception("Found unrecognized output in stderr from {}, halting, line was {}".format(' '.join(command), line))
     lines = stdout.decode("utf-8").strip().split("\n")
     # print(lines)
     grade = float(lines[-1])
