@@ -166,7 +166,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             # Make sure that it's placed in the working directory of the service (pwdx <PID>)
             course_config = json.load(fname)
         await post_grade(user['name'], grade,
-                         course_config["sourceid"][section][assignment],
+                         course_config["sourcedid"][section][assignment],
                          course_config["outcomes_url"][section])
 
 
