@@ -139,6 +139,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             assignment = notebook['metadata']['assignment']
         except:
             assignment = notebook['metadata']['lab']
+        course = notebook['metadata']['course']
 
         timestamp = str(time.time())
         # save notebook submission with user id and time stamp
@@ -166,8 +167,8 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             # Make sure that it's placed in the working directory of the service (pwdx <PID>)
             course_config = json.load(fname)
         await post_grade(user['name'], grade,
-                         course_config["sourcedid"][section][assignment],
-                         course_config["outcomes_url"][section])
+                         course_config[course]["sourcedid"][section][assignment],
+                         course_config[course]["outcomes_url"][section])
 
 
 if __name__ == '__main__':
