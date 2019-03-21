@@ -11,7 +11,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.escape
 import tornado.options
-from grade_lab import grade_lab
+from grade_assignment import grade_assignment
 from hashlib import sha1
 from jupyterhub.services.auth import HubAuthenticated
 from lxml import etree
@@ -135,11 +135,14 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         # in the future, assignment should be metadata in notebook
         notebook = req_data['nb']
         section = notebook['metadata']['section']
-        lab = notebook['metadata']['lab']
+        try:
+            assignment = notebook['metadata']['assignment']
+        except:
+            assignment = notebook['metadata']['lab']
 
         timestamp = str(time.time())
         # save notebook submission with user id and time stamp
-        submission_file = "/home/vipasu/gofer_service/submissions/{}_{}_{}_{}.ipynb".format(user['name'], section, lab, timestamp)
+        submission_file = "/home/vipasu/gofer_service/submissions/{}_{}_{}_{}.ipynb".format(user['name'], section, assignment, timestamp)
         with open(submission_file, 'w') as outfile:
             json.dump(notebook, outfile)
 
@@ -147,11 +150,11 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         self.write("User submission has been received. Grade will be posted to the gradebook once it's finished running!")
         self.finish()
 
-        # Grade lab
-        grade = await grade_lab(submission_file, section, lab)
+        # Grade assignment
+        grade = await grade_assignment(submission_file, section, assignment)
 
         # Write the grade to a sqlite database
-        grade_info = (user['name'], grade, section, lab, timestamp)
+        grade_info = (user['name'], grade, section, assignment, timestamp)
         write_grade(grade_info)
 
         # post grade to EdX
@@ -163,7 +166,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             # Make sure that it's placed in the working directory of the service (pwdx <PID>)
             course_config = json.load(fname)
         await post_grade(user['name'], grade,
-                         course_config["sourcedid"][section][lab],
+                         course_config["sourcedid"][section][assignment],
                          course_config["outcomes_url"][section])
 
 
