@@ -168,7 +168,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             course_config = json.load(fname)
         await post_grade(user['name'], grade,
                          course_config[course]["sourcedid"][section][assignment],
-                         course_config[course]["outcomes_url"][section])
+                         course_config[course]["outcomes_url"][section][assignment])
 
 
 if __name__ == '__main__':
