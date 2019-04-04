@@ -39,7 +39,7 @@ async def grade_assignment(submission, section='3', assignment='lab01'):
             if 'Killed' in line:
                 # Our container was killed, so let's just skip this one
                 return False
-            if not "warning" in line.lower():
+            if  "warning" not in line.lower():
                 print(line)
                 raise Exception("Found unrecognized output in stderr from {}, halting, line was {}".format(' '.join(command), line))
     lines = stdout.decode("utf-8").strip().split("\n")
