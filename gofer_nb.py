@@ -12,6 +12,10 @@ import tornado.ioloop
 import tornado.escape
 import tornado.options
 from grade_assignment import grade_assignment
+import logging
+import traceback
+import pandas as pd
+from time import gmtime, strftime
 from hashlib import sha1
 from jupyterhub.services.auth import HubAuthenticated
 from lxml import etree
@@ -151,12 +155,15 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         self.write("User submission has been received. Grade will be posted to the gradebook once it's finished running!")
         self.finish()
 
-        # Grade assignment
-        grade = await grade_assignment(submission_file, section, assignment)
+        try:
+            # Grade assignment
+            grade = await grade_assignment(submission_file, section, assignment)
 
-        # Write the grade to a sqlite database
-        grade_info = (user['name'], grade, section, assignment, timestamp)
-        write_grade(grade_info)
+            # Write the grade to a sqlite database
+            grade_info = (user['name'], grade, section, assignment, timestamp)
+            write_grade(grade_info)
+        except:
+            logErrorCSV(user['name'], section, assignment, traceback.format_exc())
 
         # post grade to EdX
         with open('/home/vipasu/x19_config.json', 'r') as fname:
@@ -166,14 +173,38 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
             # Make sure that it's placed in the working directory of the service (pwdx <PID>)
             course_config = json.load(fname)
-        await post_grade(user['name'], grade,
-                         course_config[course]["sourcedid"][section][assignment],
-                         course_config[course]["outcomes_url"][section][assignment])
+
+        try:
+            await post_grade(user['name'], grade,
+                            course_config[course]["sourcedid"][section][assignment],
+                            course_config[course]["outcomes_url"][section][assignment])
+        except GradePostException as e:
+            logErrorCSV(user['name'], section, assignment, str(e.response) + "\n" + traceback.format_exc())
+        except:
+            logErrorCSV(user['name'], section, assignment, traceback.format_exc())
+
+def logErrorCSV(username, section, assignment, msg):
+    try:
+        df = pd.read_csv("errors.csv")
+    except:
+        df = pd.DataFrame(columns=["timestamp", "username","section","assignment","message"])
+
+    df.loc[len(df.index)] = [strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()),username,section,assignment,msg]
+    df.to_csv("errors.csv", index=False)
+
+
+class csvHandler(logging.FileHandler):
+    def emit(self, record):
+        logErrorCSV(None, None, None, traceback.format_exc())
+
 
 
 if __name__ == '__main__':
     tornado.options.parse_command_line()
     app = tornado.web.Application([(prefix, GoferHandler)])
+
+    logger = logging.getLogger('tornado.application')
+    logger.addHandler(csvHandler('errors'))
 
     app.listen(10101)
 
