@@ -23,6 +23,8 @@ from oauthlib.oauth1.rfc5849 import signature, parameters
 from sqlite3 import Error
 
 prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
+ERROR_FILE = "tornado_errors.csv"
+ERROR_PATH = "tornadoerrors"
 
 
 def write_grade(grade_info, db_fname="gradebook.db"):
@@ -163,7 +165,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             grade_info = (user['name'], grade, section, assignment, timestamp)
             write_grade(grade_info)
         except:
-            logErrorCSV(user['name'], section, assignment, traceback.format_exc())
+            logErrorCSV(timestamp, user['name'], section, assignment, traceback.format_exc())
 
         # post grade to EdX
         with open('/home/vipasu/x19_config.json', 'r') as fname:
@@ -179,23 +181,29 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
                             course_config[course]["sourcedid"][section][assignment],
                             course_config[course]["outcomes_url"][section][assignment])
         except GradePostException as e:
-            logErrorCSV(user['name'], section, assignment, str(e.response) + "\n" + traceback.format_exc())
+            logErrorCSV(timestamp, user['name'], section, assignment, str(e.response) + "\n" + traceback.format_exc())
         except:
-            logErrorCSV(user['name'], section, assignment, traceback.format_exc())
+            logErrorCSV(timestamp, user['name'], section, assignment, traceback.format_exc())
 
-def logErrorCSV(username, section, assignment, msg):
+def logErrorCSV(timestamp, username, section, assignment, msg):
     try:
-        df = pd.read_csv("errors.csv")
+        df = pd.read_csv(ERROR_FILE)
     except:
-        df = pd.DataFrame(columns=["timestamp", "username","section","assignment","message"])
+        df = pd.DataFrame(columns=["timestamp", "username","section","assignment","filename"])
 
-    df.loc[len(df.index)] = [strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()),username,section,assignment,msg]
-    df.to_csv("errors.csv", index=False)
+    ts = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+    filename = timestamp + "_" + str(username)
+
+    with open("{}/{}.txt".format(ERROR_PATH,filename), "w") as f:
+        f.write(traceback.format_exc())
+
+    df.loc[len(df.index)] = [ts,username,section,assignment,filename]
+    df.to_csv(ERROR_FILE, index=False)
 
 
 class csvHandler(logging.FileHandler):
     def emit(self, record):
-        logErrorCSV(None, None, None, traceback.format_exc())
+        logErrorCSV(str(time.time()), None, None, None, traceback.format_exc())
 
 
 
@@ -204,7 +212,7 @@ if __name__ == '__main__':
     app = tornado.web.Application([(prefix, GoferHandler)])
 
     logger = logging.getLogger('tornado.application')
-    logger.addHandler(csvHandler('errors'))
+    logger.addHandler(csvHandler(ERROR_FILE))
 
     app.listen(10101)
 
