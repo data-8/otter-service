@@ -27,7 +27,6 @@ async def grade_assignment(submission, section='3', assignment='lab01'):
     with open(submission) as f:
 
         content = f.read().encode('utf-8')
-        print(content)
         try:
             async with async_timeout.timeout(300):
                 stdout, stderr = await process.communicate(content)

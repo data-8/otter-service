@@ -145,7 +145,12 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             assignment = notebook['metadata']['assignment']
         except:
             assignment = notebook['metadata']['lab']
-        course = notebook['metadata']['course']
+
+        try:
+            course = notebook['metadata']['course']
+        except:
+            course = "8x"
+
 
         timestamp = str(time.time())
         # save notebook submission with user id and time stamp
