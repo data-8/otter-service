@@ -189,15 +189,17 @@ def logErrorCSV(timestamp, username, section, assignment, msg):
     try:
         df = pd.read_csv(ERROR_FILE)
     except:
-        df = pd.DataFrame(columns=["timestamp", "username","section","assignment","filename"])
+        df = pd.DataFrame(columns=["timestamp", "username","section","assignment","error","filename"])
 
     ts = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
     filename = timestamp + "_" + str(username)
+    trace = str(traceback.format_exc())
+    error_msg = trace.rsplit('\n',2)[1]
 
     with open("{}/{}.txt".format(ERROR_PATH,filename), "w") as f:
-        f.write(traceback.format_exc())
+        f.write(trace)
 
-    df.loc[len(df.index)] = [ts,username,section,assignment,filename]
+    df.loc[len(df.index)] = [ts,username,section,assignment, str(error_msg), filename]
     df.to_csv(ERROR_FILE, index=False)
 
 
