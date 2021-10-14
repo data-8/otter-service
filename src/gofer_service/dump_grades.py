@@ -1,14 +1,14 @@
-"""File to grab entries from gradebook.db and put them in a readable csv format"""
 import csv
 import sqlite3
-
+import os
 
 def main():
-    db_fname = "gradebook.db"
-    conn = sqlite3.connect(db_fname)
+    """File to grab entries from gradebook.db and put them in a readable csv format"""
+    db_path = os.getenv("VOLUME_PATH") + '/gradebook.db'
+    conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     data = cur.execute("SELECT * FROM GRADES;")
-    with open('grades.csv', 'w') as f:
+    with open(os.getenv("VOLUME_PATH") + '/grades.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(['userid', 'grade', 'section', 'lab', 'timestamp'])
         writer.writerows(data)

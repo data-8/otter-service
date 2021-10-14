@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gofer-pod
+  labels:
+    app: gofer-v2
+spec:
+  containers:
+    - name: gofer-v2
+      image: gcr.io/data8x-scratch/gofer:latest
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 10101
+      volumeMounts:
+        - mountPath: "/mnt/data"
+          name: gofer-mnt
+  volumes:
+    - name: gofer-mnt
+      persistentVolumeClaim:
+        claimName: gofer-claim

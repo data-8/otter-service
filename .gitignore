@@ -1,0 +1,6 @@
+venv
+.idea
+docker-compose.yml
+*.egg-info
+build
+dist
