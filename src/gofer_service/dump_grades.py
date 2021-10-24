@@ -15,4 +15,7 @@ def main():
 
 
 if __name__ == '__main__':
+    # local path when testing
+    if "VOLUME_PATH" not in os.environ:
+        os.environ["VOLUME_PATH"] = "/tmp/gofer"
     main()

@@ -5,9 +5,10 @@ RUN apt-get install -y python3 && \
     apt-get install -y curl && \
     apt-get install -y sqlite3 libsqlite3-dev
 
+COPY ./dist/gofer-service-0.1.0.tar.gz /opt/gofer_service/
 COPY ./requirements/prod.txt /opt/gofer_service/prod.txt
-RUN python3 -m pip install -r /opt/gofer_service/requirements/prod.txt
-RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps gofer-service
+RUN python3 -m pip install -r /opt/gofer_service/prod.txt
+RUN python3 -m pip install /opt/gofer_service/gofer-service-0.1.0.tar.gz
 
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 17.03.1-ce

@@ -25,14 +25,14 @@ def get_via_gcp_secrets(key):
     :param key: the key to find in Google Secrets Manager
     :return: the value of the key or None
     """
-    # Create the Secret Manager client.
-    client = secretmanager.SecretManagerServiceClient()
-    project_id = os.getenv("GCP_PROJECT_ID")
-    # Build the resource name of the secret version.
-    name = f"projects/{project_id}/secrets/{key}/versions/latest"
-
-    # Access the secret version.
     try:
+        # Create the Secret Manager client.
+        client = secretmanager.SecretManagerServiceClient()
+        project_id = os.getenv("GCP_PROJECT_ID")
+        # Build the resource name of the secret version.
+        name = f"projects/{project_id}/secrets/{key}/versions/latest"
+
+        # Access the secret version.
         response = client.access_secret_version(request={"name": name})
 
         payload = response.payload.data.decode("UTF-8")

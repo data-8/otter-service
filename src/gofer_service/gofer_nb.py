@@ -158,7 +158,7 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
             if code_major != 'success':
                 raise GradePostException(response)
         else:
-            raise Exception("NOT POSTING Grades on purpose; see .env -- POST_GRADE")
+            raise GradePostException("NOT POSTING Grades on purpose; see .env -- POST_GRADE")
 
     except GradePostException as g:
         raise GradePostException(g)
@@ -239,9 +239,9 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             await post_grade(user['name'], grade,
                             course_config[course]["sourcedid"][section][assignment],
                             course_config[course]["outcomes_url"][section][assignment])
-        except GradePostException as e:
-            log_error_csv(timestamp, user['name'], section, assignment, str(e.response) + "\n" + traceback.format_exc())
-        except GradeSubmissionException:
+        except GradePostException as p:
+            log_error_csv(timestamp, user['name'], section, assignment, str(p.response) + "\n" + traceback.format_exc())
+        except GradeSubmissionException as g:
             if notebook is None:
                 section = "No notebook was in the request body"
                 assignment = "No notebook was in the request body"
@@ -251,9 +251,9 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
                 if assignment is None:
                     assignment = "Assignment: problem getting assignment - not in notebook?"
 
-            log_error_csv(timestamp, user['name'], section, assignment, traceback.format_exc())
-        except:
-            log_error_csv(timestamp, user['name'], section, assignment, traceback.format_exc())
+            log_error_csv(timestamp, user['name'], section, assignment, str(g.response) + "\n" + traceback.format_exc())
+        except Exception as e:
+            log_error_csv(timestamp, user['name'], section, assignment, str(e) + "\n" + traceback.format_exc())
 
 
 def log_error_csv(timestamp, username, section, assignment, msg):
@@ -295,7 +295,8 @@ class CsvHandler(logging.FileHandler):
 
 def start_server():
     """
-    start the tornado server listening on port 10101
+    start the tornado server listening on port 10101 - I seperated this function from the main()
+    in order to make testing easier
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
@@ -308,7 +309,7 @@ def start_server():
     return app
 
 
-if __name__ == '__main__':
+def main():
     from dotenv import load_dotenv
     load_dotenv()
     if not os.path.exists(ERROR_PATH):
@@ -321,3 +322,8 @@ if __name__ == '__main__':
 
     start_server()
     tornado.ioloop.IOLoop.current().start()
+
+
+if __name__ == '__main__':
+    main()
+
