@@ -161,7 +161,7 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
             raise GradePostException("NOT POSTING Grades on purpose; see .env -- POST_GRADE")
 
     except GradePostException as g:
-        raise GradePostException(g)
+        raise g
     except Exception as e:
         raise Exception(f"Problem Posting Grade to LTI:{e}")
 
@@ -240,7 +240,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
                             course_config[course]["sourcedid"][section][assignment],
                             course_config[course]["outcomes_url"][section][assignment])
         except GradePostException as p:
-            log_error_csv(timestamp, user['name'], section, assignment, str(p.response) + "\n" + traceback.format_exc())
+            log_error_csv(timestamp, user['name'], section, assignment, str(p.response))
         except GradeSubmissionException as g:
             if notebook is None:
                 section = "No notebook was in the request body"
@@ -251,9 +251,9 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
                 if assignment is None:
                     assignment = "Assignment: problem getting assignment - not in notebook?"
 
-            log_error_csv(timestamp, user['name'], section, assignment, str(g.response) + "\n" + traceback.format_exc())
+            log_error_csv(timestamp, user['name'], section, assignment, str(g.response))
         except Exception as e:
-            log_error_csv(timestamp, user['name'], section, assignment, str(e) + "\n" + traceback.format_exc())
+            log_error_csv(timestamp, user['name'], section, assignment, str(e))
 
 
 def log_error_csv(timestamp, username, section, assignment, msg):
@@ -274,14 +274,12 @@ def log_error_csv(timestamp, username, section, assignment, msg):
     ts = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
     filename = timestamp + "_" + str(username)
     trace = f"User: {username}\nSection: {section}\nAssignment: {assignment}\n\n"
-    trace += str(traceback.format_exc()) + "\n"
-    trace += msg + "\n"
-    error_msg = trace.rsplit('\n', 2)[1]
+    trace += str(traceback.format_exc())
 
     with open("{}/{}.txt".format(ERROR_PATH, filename), "a+") as f:
         f.write(trace)
 
-    df.loc[len(df.index)] = [ts, username, section, assignment, str(error_msg), filename]
+    df.loc[len(df.index)] = [ts, username, section, assignment, msg, filename]
     df.to_csv(ERROR_FILE, index=False)
 
 
