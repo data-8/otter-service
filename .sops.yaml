@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: secrets/.*
+    gcp_kms: "projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/gofer_service"

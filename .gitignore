@@ -1,6 +1,8 @@
 venv
 .idea
 docker-compose.yml
+build.sh
+service-account.sh
 *.egg-info
 build
 dist

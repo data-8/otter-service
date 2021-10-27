@@ -12,6 +12,7 @@ def submit_test():
 
     data = json.loads(data)
     js = {'nb':data}
+    #response = requests.post('http://grading.data8x.berkeley.edu:10101/services/gofer_nb/', data=json.dumps(js))
     response = requests.post('http://localhost:10101/services/gofer_nb/', data=json.dumps(js))
     print(response)
 

@@ -1,16 +1,19 @@
 from google.cloud import secretmanager
 import os
+import subprocess
+import yaml
 
-
-def get(key_name) -> str:
+def get(key_name, secrets_file_path=None) -> str:
     """
-    This method first check the Google Secrets Manager for the key and then tries the
-    environment. it will return None if the key is not found
+    This method first tries to decrypt sops file and then tries the
+    environment. it will return an Exception if the key is not found
 
     :param key_name: the name of the key to retrieve from the Secrets or the environment
     :return: the secret
     """
-    secret = get_via_gcp_secrets(key_name)
+    secret = None
+    if secrets_file_path is not None:
+        secret = get_via_sops(key_name, secrets_file_path)
     if secret is None:
         secret = get_via_env(key_name)
     if secret is None:
@@ -18,26 +21,18 @@ def get(key_name) -> str:
     return secret
 
 
-def get_via_gcp_secrets(key):
+def get_via_sops(key, secrets_file_path):
     """
-    This function look in Google Secrets Manager for the key.
+    This function attempts to use sops to decrpyt the secrets/gke_key.yaml
 
     :param key: the key to find in Google Secrets Manager
     :return: the value of the key or None
     """
     try:
-        # Create the Secret Manager client.
-        client = secretmanager.SecretManagerServiceClient()
-        project_id = os.getenv("GCP_PROJECT_ID")
-        # Build the resource name of the secret version.
-        name = f"projects/{project_id}/secrets/{key}/versions/latest"
-
-        # Access the secret version.
-        response = client.access_secret_version(request={"name": name})
-
-        payload = response.payload.data.decode("UTF-8")
-        return payload
-    except:
+        sops_output = subprocess.check_output(['sops', "-d", "secrets/gke_key.yaml"])
+        dct = yaml.safe_load(sops_output)
+        return dct[key.lower()]
+    except Exception as e:
         return None
 
 def get_via_env(key):

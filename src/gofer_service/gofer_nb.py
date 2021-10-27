@@ -14,7 +14,8 @@ import gofer_service.create_database as create_database
 import logging
 import traceback
 import pandas as pd
-from time import gmtime, strftime
+import datetime
+import pytz
 from hashlib import sha1
 from jupyterhub.services.auth import HubAuthenticated
 from lxml import etree
@@ -270,8 +271,9 @@ def log_error_csv(timestamp, username, section, assignment, msg):
         df = pd.read_csv(ERROR_FILE)
     except:
         df = pd.DataFrame(columns=["timestamp", "username", "section", "assignment", "error", "filename"])
-
-    ts = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+    utc_now = pytz.utc.localize(datetime.datetime.utcnow())
+    pst_now = utc_now.astimezone(pytz.timezone("America/Los_Angeles"))
+    ts = pst_now.strftime("%Y/%m/%d %H:%M:%S.%f")[:-3]
     filename = timestamp + "_" + str(username)
     trace = f"User: {username}\nSection: {section}\nAssignment: {assignment}\n\n"
     trace += str(traceback.format_exc())

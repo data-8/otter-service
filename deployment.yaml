@@ -2,9 +2,11 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: gofer-pod
+  namespace: grader-k8-namespace
   labels:
     app: gofer-v2
 spec:
+  serviceAccountName: grader-k8-sa
   containers:
     - name: gofer-v2
       image: gcr.io/data8x-scratch/gofer:latest
