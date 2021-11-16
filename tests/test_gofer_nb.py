@@ -44,3 +44,15 @@ def test_write_grade(setup_db):
     assert "1111" in data[1]
 
 
+def test_create_post_url():
+    os.environ['EDX_URL'] = "edge.edx.org"
+    url = gn.create_post_url("BerkeleyX+Data8.1x+2021", "6333e19d6b4d46f88df671ba50f616d8")
+    assert url == "https://edge.edx.org/courses/course-v1:BerkeleyX+Data8.1x+2021/xblock/block-v1:BerkeleyX+Data8.1x+2021+type@lti_consumer+block@6333e19d6b4d46f88df671ba50f616d8/handler_noauth/outcome_service_handler"
+    del os.environ['EDX_URL']
+
+
+def test_create_sourced_id():
+    os.environ['EDX_URL'] = "edge.edx.org"
+    url = gn.create_sourced_id("BerkeleyX+Data8.1x+2021", "6333e19d6b4d46f88df671ba50f616d8")
+    assert url == "course-v1%3ABerkeleyX+Data8.1x+2021:edge.edx.org-6333e19d6b4d46f88df671ba50f616d8"
+    del os.environ['EDX_URL']
