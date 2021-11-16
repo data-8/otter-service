@@ -16,6 +16,9 @@ spec:
       volumeMounts:
         - mountPath: "/mnt/data"
           name: gofer-mnt
+      envFrom:
+        - configMapRef:
+            name: grader-env
   volumes:
     - name: gofer-mnt
       persistentVolumeClaim:
