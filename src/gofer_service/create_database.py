@@ -1,8 +1,6 @@
 import sqlite3
 from sqlite3 import Error
 import os
-from dotenv import load_dotenv
-load_dotenv()
 
 
 def create_connection(db_fname):

@@ -13,4 +13,4 @@ def change_test_dir(request):
 @pytest.mark.asyncio
 async def test_some_asyncio_code(change_test_dir):
     grade = await ga.grade_assignment("gofer_service/tests/test_files/hw01-SEAN.ipynb", "1", "lab01")
-    assert 3.0 == grade
+    assert 0.14285714285714285 == grade

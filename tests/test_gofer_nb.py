@@ -1,5 +1,3 @@
-import json
-import requests
 import pytest
 import os
 import gofer_service.gofer_nb as gn
@@ -8,9 +6,10 @@ from helper import make_db, create_connection
 
 @pytest.fixture
 def app():
-    VOLUME_PATH = "/tmp/gofer"
-    os.makedirs(VOLUME_PATH, exist_ok=True)
-    gn.ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
+    os.environ["VOLUME_PATH"] = "/tmp/gofer"
+    error_file = "tornado_errors.csv"
+    os.makedirs(os.environ["VOLUME_PATH"], exist_ok=True)
+    gn.ERROR_FILE = os.environ["VOLUME_PATH"] + f"/{error_file}"
     return gn.start_server()
 
 
@@ -24,10 +23,14 @@ def setup_db():
     os.remove(db_path)
     del os.environ["VOLUME_PATH"]
 
+
 async def test_http_client(http_server_client):
     resp = await http_server_client.fetch('/services/gofer_nb/')
     assert resp.code == 200
     http_server_client.close()
+    os.remove(gn.ERROR_FILE)
+    os.rmdir(os.environ["VOLUME_PATH"])
+    del os.environ["VOLUME_PATH"]
 
 def test_write_grade(setup_db):
     db_conn, db_path = setup_db

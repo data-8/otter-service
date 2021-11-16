@@ -23,8 +23,7 @@ from oauthlib.oauth1.rfc5849 import signature, parameters
 from sqlite3 import Error
 import os
 import gofer_service.lti_keys as lti_keys
-from dotenv import load_dotenv
-load_dotenv()
+
 
 prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
