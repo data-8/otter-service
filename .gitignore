@@ -2,8 +2,14 @@ venv
 .idea
 docker-compose.yml
 build.sh
-service-account.sh
+deploy-service-account.sh
+deploy-remove.sh
+deploy.sh
 dump_gradebook.sh
 *.egg-info
 build
 dist
+
+results.json
+sops-v3.7.1.linux
+sops.linux

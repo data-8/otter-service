@@ -18,7 +18,7 @@ RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
 
 COPY ./requirements/prod.txt /opt/gofer_service/prod.txt
 RUN python3 -m pip install -r /opt/gofer_service/prod.txt
-RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps gofer-service==0.1.4
+RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps gofer-service
 
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 17.03.1-ce
