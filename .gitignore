@@ -3,6 +3,7 @@ venv
 docker-compose.yml
 build.sh
 service-account.sh
+dump_gradebook.sh
 *.egg-info
 build
 dist
