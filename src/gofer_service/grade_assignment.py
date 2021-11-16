@@ -1,6 +1,7 @@
 import asyncio
-import async_timeout
 import os
+import async_timeout
+
 
 
 async def grade_assignment(submission, sec='3', assignment='lab01'):
@@ -37,7 +38,6 @@ async def grade_assignment(submission, sec='3', assignment='lab01'):
             stdout, stderr = await process.communicate()
 
         for line in stderr.decode('utf-8').split('\n'):
-            print(line)
             if line.strip() == '':
                 # Ignore empty lines
                 continue
@@ -51,10 +51,13 @@ async def grade_assignment(submission, sec='3', assignment='lab01'):
         grade = None
         for line in lines:
             if "Total Score" in line:
-                grade = line.split(" ")[2]
+                score = line.split(" ")
+                raw = float(score[2])
+                total = float(score[4])
+                grade = raw / total
         if grade is None:
             raise Exception(f"Unable to determine grade coming from otter on: {submission}")
-        return float(grade)
+        return grade
     except asyncio.TimeoutError:
         raise Exception(f'Grading timed out for {submission}')
     except Exception as e:
