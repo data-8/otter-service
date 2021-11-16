@@ -23,6 +23,8 @@ from oauthlib.oauth1.rfc5849 import signature, parameters
 from sqlite3 import Error
 import os
 import gofer_service.lti_keys as lti_keys
+from dotenv import load_dotenv
+load_dotenv()
 
 prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
@@ -70,7 +72,15 @@ class GradeSubmissionException(Exception):
         self.response = response
 
 
-async def post_grade(user_id, grade, sourcedid, outcomes_url):
+def create_post_url(course_id, assignment_id):
+    return f"https://{os.environ['EDX_URL']}/courses/course-v1:{course_id}/xblock/block-v1:{course_id}+type@lti_consumer+block@{assignment_id}/handler_noauth/outcome_service_handler"
+
+
+def create_sourced_id(course_id,assignment_id):
+    return f"course-v1%3A{course_id}:{os.environ['EDX_URL']}-{assignment_id}"
+
+
+async def post_grade(user_id, grade, course_id, assignment_id):
     """
     This posts the grade to the LTI server
     :param user_id: the user to post the grade for
@@ -82,6 +92,8 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
     # TODO: extract this into a real library with real XML parsing
     # WARNING: You can use this only with data you trust! Beware, etc.
     try:
+        sourcedid = create_sourced_id(course_id,assignment_id)
+        outcomes_url = create_post_url(course_id,assignment_id)
         post_xml = r"""
         <?xml version = "1.0" encoding = "UTF-8"?>
         <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
@@ -114,6 +126,7 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
         sourcedid = "{}:{}".format(sourcedid, user_id)
         post_data = post_xml.format(grade=float(grade), sourcedid=sourcedid)
 
+
         # Yes, we do have to use sha1 :(
         body_hash_sha = sha1()
         body_hash_sha.update(post_data.encode('utf-8'))
@@ -141,7 +154,6 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
         })
 
         if os.getenv("POST_GRADE").lower() in ("true", '1', 't'):
-            print("SHOULD NOT BE HERE")
             async with async_timeout.timeout(10):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(outcomes_url, data=post_data, headers=headers) as response:
@@ -155,11 +167,11 @@ async def post_grade(user_id, grade, sourcedid, outcomes_url):
             # XML and its namespaces. UBOOF!
             status = response_tree.find('.//{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_statusInfo')
             code_major = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_codeMajor').text
-
+            desc = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_description').text
             if code_major != 'success':
-                raise GradePostException(response)
+                raise GradePostException(desc)
         else:
-            raise GradePostException("NOT POSTING Grades on purpose; see .env -- POST_GRADE")
+            raise GradePostException("NOT POSTING Grades on purpose; see deployment-config.yaml -- POST_GRADE")
 
     except GradePostException as g:
         raise g
@@ -190,7 +202,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             # Accept notebook submissions, saves, then grades them
             user = self.get_current_user()
             if user is None:
-                user = {"name": "TEST_USER"}
+                user = {"name": "ed1c44871f37325b7e085b6d191f0a4b"}
 
             req_data = tornado.escape.json_decode(self.request.body)
             # in the future, assignment should be metadata in notebook
@@ -229,7 +241,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             write_grade(grade_info, db_path)
 
             # post grade to EdX
-            with open('{}/materials-x19/x19_config.json'.format(os.getcwd()), 'r') as filename:
+            with open(f'{os.getcwd()}/materials-x19/{os.environ["COURSE_CONFIG_FILE"]}', 'r') as filename:
                 # Course DEPENDENT configuration file
                 # Should contain page for hitting the gradebook (outcomes_url)
                 # as well as resource IDs for assignments
@@ -238,10 +250,11 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
                 course_config = json.load(filename)
 
             await post_grade(user['name'], grade,
-                            course_config[course]["sourcedid"][section][assignment],
-                            course_config[course]["outcomes_url"][section][assignment])
+                            course_config[course][section]["course_id"],
+                            course_config[course][section]["assignments"][assignment])
         except GradePostException as p:
-            log_error_csv(timestamp, user['name'], section, assignment, str(p.response))
+            msg = "GradePostException: See log file for traceback"
+            log_error_csv(timestamp, user['name'], section, assignment, msg)
         except GradeSubmissionException as g:
             if notebook is None:
                 section = "No notebook was in the request body"
@@ -310,8 +323,6 @@ def start_server():
 
 
 def main():
-    from dotenv import load_dotenv
-    load_dotenv()
     if not os.path.exists(ERROR_PATH):
         os.makedirs(ERROR_PATH)
     if not os.path.exists(SUBMISSIONS_PATH):
