@@ -1,0 +1,11 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', '-t', 'gcr.io/data8x-scratch/gofer', '--build-arg=GIT_ACCESS_TOKEN=$_GITHUB_KEY', '.' ]
+  # push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/data8x-scratch/gofer']
+images:
+  - 'gcr.io/data8x-scratch/gofer'
+timeout: 1200s
+substitutions:
+  _GITHUB_KEY: ""

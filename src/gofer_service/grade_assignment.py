@@ -1,10 +1,8 @@
 import asyncio
-import os
 import async_timeout
 
 
-
-async def grade_assignment(submission, sec='3', assignment='lab01'):
+async def grade_assignment(submission, sec='3', assignment='lab01', solutions_path=None):
     """
     This function spins up a docker instance using otter, grades the submission
     and returns the grade
@@ -12,6 +10,7 @@ async def grade_assignment(submission, sec='3', assignment='lab01'):
     :param submission: the path to the file you want to grade
     :param sec: the course section; it is used to determine the path to the solution file
     :param assignment: the name of the assignment; it is used to determine the path to the solution file
+    :param solutions_path: [OPTIONAL] used to execute pytests
     :return: grade
     :rtype: float
     """
@@ -19,22 +18,23 @@ async def grade_assignment(submission, sec='3', assignment='lab01'):
         assign_type = "lab"
         if "hw" in assignment:
             assign_type = "hw"
-        p = '{wd}/materials-x19/otter-materials-grading/x19/{assign_type}/{sec}/{assignment}/autograder/autograder.zip'
-        zip_path = p.format(wd=os.getcwd(), assign_type=assign_type, sec=sec, assignment=assignment)
+        if solutions_path is None:
+            solutions_path = '/opt/materials-x22-private/materials/x22/{assign_type}/{sec}/{assignment}/autograder.zip'
+        zip_path = solutions_path.format(assign_type=assign_type, sec=sec, assignment=assignment)
         command = [
-                'otter', 'run',
-                '-a',
-                zip_path,
-                submission
-            ]
+            'otter', 'run',
+            '-a',
+            zip_path,
+            submission
+        ]
         process = await asyncio.create_subprocess_exec(
-                *command,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
+            *command,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
 
-        async with async_timeout.timeout(300):
+        async with async_timeout.timeout(600):
             stdout, stderr = await process.communicate()
 
         for line in stderr.decode('utf-8').split('\n'):
@@ -46,7 +46,7 @@ async def grade_assignment(submission, sec='3', assignment='lab01'):
                 raise Exception(f"Container was killed -- nothing will work: {submission}")
             if "warning" not in line.lower():
                 cmd = ' '.join(command)
-                raise Exception("Found unrecognized output in stderr from {}, halting, line was {}".format(cmd, line))
+                raise Exception(f"Found unrecognized output in stderr from {cmd}, halting, line was {line}")
         lines = stdout.decode("utf-8").strip().split("\n")
         grade = None
         for line in lines:

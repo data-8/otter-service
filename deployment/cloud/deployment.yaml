@@ -11,6 +11,15 @@ spec:
     - name: gofer-v2
       image: gcr.io/data8x-scratch/gofer:latest
       imagePullPolicy: Always
+      resources:
+        limits:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 8Gi
+        requests:
+          cpu: 500m
+          ephemeral-storage: 1Gi
+          memory: 8Gi
       ports:
         - containerPort: 10101
       volumeMounts:

@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: grader-env
+    namespace: grader-k8-namespace
+data:
+    POST_GRADE: "False"
+    EDX_URL: edge.edx.org
+    COURSE_CONFIG_PATH: /opt/materials-x22-private/8x_course_config_edge.json
+    GCP_PROJECT_ID: data8x-scratch
+    VOLUME_PATH: /mnt/data
+    ERROR_FILE: tornado_errors.csv
+    ERROR_PATH: tornadoerrors
+    SUBMISSIONS_PATH: submissions
+    DB_PATH: gradebook.db
+    JUPYTERHUB_SERVICE_PREFIX: /services/gofer_nb/
+    JUPYTERHUB_API_URL: https://hub.data8x.berkeley.edu/hub/api
+    JUPYTERHUB_BASE_URL: https://hub.data8x.berkeley.edu
+    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:XpG3/H7kiqbuW6ah+DuH4cLhk8RI8zTtUOLbxHLL2qgVa6/vyv3hCnoVxjsX6StNDYK+mkegmvFggCOpdVxJ1Q==,iv:aQbSp79d6HQ3zVQnvGuchzedupLQJVCYu+ZhXmqFR+o=,tag:sLjLmo8+Hb1KSvkWSFxesg==,type:str]
+    TEST_USER: ed1c44871f37325b7e085b6d191f0a4b
+sops:
+    kms: []
+    gcp_kms:
+        - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/gofer_service
+          created_at: "2022-02-22T15:37:13Z"
+          enc: CiQAhlmpT0ZBoYTyEJewrxbtaJujOLyyWDRwvBRjYMW9jGTGUGoSSQB0yZRE7b/lFSdvGrMyasgAzORobRIzmFOglM0S6AW43hJB7NYcdK5QOiN7aSQJ4ciQliH6cxeY570HfLjmHf9yuzXz5j/xOBQ=
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2022-02-22T15:37:14Z"
+    mac: ENC[AES256_GCM,data:ZTi3wLqE1pFV/VPMJhF+UZ8iQk0fJHgaAwNuYAs2vqiGm6ieounwgBZPq8+x5L7+GH2kfsVD2qz/aJ1ZVO168/jwOWbn3RMF4m7rcsDU7QcWlibhu0QP8J2gh7ct11j1tpjBam1iBdoyTHxQ1frDmfeolicenZQVAL4iTdXZky0=,iv:436i2vM7BZtpnHg4uMFNTga4vVNFPYoKNwMVpVSgnkU=,tag:xVGpOftcL1lz/UHvnXu4lw==,type:str]
+    pgp: []
+    encrypted_suffix: _TOKEN
+    version: 3.7.1

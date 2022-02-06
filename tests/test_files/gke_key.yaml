@@ -1,17 +1,16 @@
-lti_consumer_key: ENC[AES256_GCM,data:vQ90l9KB2IcyfD3YHN2T6Pg+J+SGYlWSDPOiFGVl9/asBBShD2nbFtvmoa6VGv3SRCLIqj7bfJfob25Wrh//AA==,iv:PGXwIPr4vR0f8i6EHIY4Q5dhmw+99JbOrexmhC0zW9g=,tag:0035o6T1kH4282asNA2jBg==,type:str]
-lti_consumer_secret: ENC[AES256_GCM,data:ELM7xO2q73o1c0vb7wU+PQTo/UalG790qRszTNZcIvp01ae/uN+ljV35/2pEB6RjEEuAjP0ZYvh4nPD0WEblAA==,iv:cPx/MTYDsmvWDpdhHIbVriBTxiqO1EjFqMr1mCZhOuc=,tag:53hcyuCG3aXxc0W9sdRMUw==,type:str]
-jupyterhub_api_token: ENC[AES256_GCM,data:0wcGKtssVoD7o109aGkNufAnh9Zf7/eZut+vqdnjTH2bcFpwCdJmVDQG/jZKDKRyvlEEDZDdwKG4l7Oe/xEppA==,iv:d27ps6BaKiQIyjKU3WO7zIyMWw2RZeX0+lXjUKCItoQ=,tag:C9AlkcbVPILiHw8yoOM1tA==,type:str]
+LTI_CONSUMER_KEY: ENC[AES256_GCM,data:mtQxQt62NG1bjnUA,iv:VJmvVuoaS6rNuLDkQBnKsJFmGSGGoy6NLIGCNjmxvTs=,tag:0ZRYVL1lSxzAaKtnWRNF/g==,type:str]
+LTI_CONSUMER_SECRET: ENC[AES256_GCM,data:hUdN9lDhllxhE9IaFVGg,iv:uv/9EMME+giwfgPEc3DUzQrTH5XfZfNGkUxS39113zs=,tag:umB87Bm5T0twKh69SBPtYw==,type:str]
 sops:
     kms: []
     gcp_kms:
         - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/gofer_service
-          created_at: "2021-10-27T00:56:31Z"
-          enc: CiQAhlmpTzOFUfFKOTlmg9ewdUejM+MAKLDNuZkc3VVASJwfw6wSSQA5X5F/BAJEFdaiB7jomV2NTBrho2tfGLlFT4CeI7PZRSsCK1iHB6WlMJJ5vjq3likh7bd+u0gNPfb95T3vNn5F2qx8Z2Mb7qY=
+          created_at: "2022-02-23T19:02:39Z"
+          enc: CiQAhlmpT4GMfmq324x8G0p0RcfEZAQkf1xokNxVm82lOWnGpNYSSQB0yZRErtyTIhDhmnjJS51htxRYywg6qsOI/gzavMOhQ+bna5rFpGbpI/9r1MYXNf/dS5ZFHAR1KfrhhHLO6A3j1fpcsxnaj/c=
     azure_kv: []
     hc_vault: []
     age: []
-    lastmodified: "2021-10-27T01:00:56Z"
-    mac: ENC[AES256_GCM,data:QlO6YjK3s4eJmA+OG/ooH9xo8zqeVNXrYcShPCAljXDbTzDfZ6VHv9zQhXVkpv3cXz5KvY7LsampkVAHXlIEAiSQSogfMzK27Zgh2LT49ydTqqrBJ66apf4ncjzgyIgDgNOiItyIEhrmIwGVC5UExQxY3+ICysgE+WMjIm5Xlus=,iv:Y4Zl5u7vEgfDV+NmBRmWAF5YGZ/wZTYmZgxK46Z9HRM=,tag:rpH3WuXj4fWzfnD2lTYggQ==,type:str]
+    lastmodified: "2022-02-23T19:02:40Z"
+    mac: ENC[AES256_GCM,data:gcqOb5Bw+OjE02VcXEgt4sQwjP1zrTgu4rtNP+HWmspBU6Dw9EaIrOC3ZzTi/EwH2vzU4dykIQBFzMC2eVkZLZ1KdGb/FzHxz5pEV5w//3RVQsPAmxF7UTxheToWeqyWHEDF3sRJ0q3ydjtS+S/ftthbyThIzHsAmz6ex9Ur5Zg=,iv:4STHXl2RGjLqFTJ5QhPznry1FEW0jd+i4THTScm8oG4=,tag:4aSoQz4WfjG3Ajbn27JE2Q==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.7.1

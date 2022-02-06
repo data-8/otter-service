@@ -1,10 +1,11 @@
 venv
 .idea
 docker-compose.yml
-build.sh
-deploy-service-account.sh
-deploy-remove.sh
-deploy.sh
+deployment/local/build.sh
+deployment/cloud/deploy-service-account.sh
+deployment/cloud/deploy-remove.sh
+deployment/cloud/deploy.sh
+.DS_Store
 dump_gradebook.sh
 *.egg-info
 build
@@ -13,3 +14,5 @@ dist
 results.json
 sops-v3.7.1.linux
 sops.linux
+.pylintrc
+settings.json
