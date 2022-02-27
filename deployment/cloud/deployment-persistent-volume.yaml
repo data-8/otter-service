@@ -1,12 +1,21 @@
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: PersistentVolume
 metadata:
-  name: gofer-claim
+  name: gofer-volume
+  labels:
+    name: gofer-volume
   namespace: grader-k8-namespace
 spec:
-  accessModes:
-    - ReadWriteOnce
+  capacity:
+    storage: 4Gi
+  storageClassName: standard
   volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 2Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: /data
+    server: 10.128.0.31

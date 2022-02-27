@@ -49,6 +49,18 @@ This is the current deployment configuration. We deploy the gofer_service to gcl
 
 Once the GKE cluster is created in gcloud, executing the `deployment/cloud/deploy.sh` file  deploys the service to the cloud. 
 
+# Depoloyment Details:
+## Rollback: 
+If we deploy and find problems the quickest way to rollback the deployment is to look at the revision history and undo the deployment by deploying to a previous revision number:
+- kubectl rollout history deployment gofer-pod -n grader-k8-namespace
+- kubectl rollout history deployment gofer-pod -n grader-k8-namespace --revision=# <-- to see details like the version of the image used
+- kubectl rollout undo deployment/gofer-pod -n grader-k8-namespace --to-revision=#
+
+## CI/CD:
+If you push a tag in the standard form of a version number(XX.XX.XX), github action creates a release from this tag, pushes the release to pypi.org, builds the docker image, pushes it google's image repository and deploys the new image into the GKE cluster.
+
+
+
 # Local installation for testing/developing
 
 With docker installed, you can use the `Dockerfile-dev` file to deploy a local instance of gofer_service. The `deployment/local/build.sh` file gives some guidance to building and installing local changes to gofer_service for testing. The usual process is to make changes, execute `build.sh`, which relies on a `docker-compose.yml` file. A sample is below but before we look, I would also study the file `tests/integration.py`. If you execute this file, you can test the service via a web connection. 
@@ -86,5 +98,4 @@ Notes:
 # Service installation in JupyterHub
 
 Instructions can be found here for running it as a service within your [jupyterhub](https://jupyterhub.readthedocs.io/en/stable/reference/services.html#launching-a-hub-managed-service)
-
 

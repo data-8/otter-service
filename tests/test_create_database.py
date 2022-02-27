@@ -5,7 +5,7 @@ from helper import make_db, create_connection
 
 
 @pytest.fixture
-async def setup():
+def setup():
     os.environ["VOLUME_PATH"] = "tests/test_files"
     db_path = os.environ["VOLUME_PATH"] + "/gradebook.db"
     make_db(db_path)
@@ -14,6 +14,7 @@ async def setup():
     conn.close()
     os.remove(db_path)
     del os.environ["VOLUME_PATH"]
+
 
 def test_create_db():
     os.environ["VOLUME_PATH"] = "tests/test_files"
@@ -31,6 +32,3 @@ def test_get_records(setup):
     users = list(map(lambda x: x[0], data))
     assert "grade" in cols
     assert "TEST_USER" in users
-
-
-

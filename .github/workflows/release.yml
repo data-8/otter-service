@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+' # Push events to any matching semantic tag. For example, 1.10.1 or 2.0.0.
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: grader-cluster 
+  GKE_ZONE: us-central1
+  DEPLOYMENT_NAME: gofer-pod
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python 3.8.2
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8.2"
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@main
+        with:
+          configuration: 'release-changelog-builder-config.json'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{steps.build_changelog.outputs.changelog}}
+          draft: false
+          prerelease: false
+      - name: Build
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install build
+          python3 -m build
+      - name: Publish a Python distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  setup-and-deploy:
+      name: Setup and Deploy
+      runs-on: ubuntu-latest
+
+      # Add "id-token" with the intended permissions.
+      permissions:
+        contents: 'read'
+        id-token: 'write'
+
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Configure Workload Identity Federation and generate an access token. This is the preferred method but sops
+      # does not us Oauth2 -- apparently is v3.7.3 it will be integrated
+      # - id: 'auth'
+      #   name: 'Authenticate to Google Cloud'
+      #   uses: 'google-github-actions/auth@v0'
+      #   with:
+      #     workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/grader-pool/providers/github-actions'
+      #     service_account: 'grader-sa@data8x-scratch.iam.gserviceaccount.com'
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud - JSON'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      # Setup gcloud CLI
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+
+      # # Get the GKE credentials so we can deploy to the cluster
+      - run: |-
+          gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.1' # The Go version to download (if necessary) and use.
+      
+      - name: Install sops
+        run: go install go.mozilla.org/sops/v3/cmd/sops@v3.7.2
+
+      # # Build image 
+      - name: Build image
+        run: |-
+          github_key=$(sops -d src/gofer_service/secrets/gh_key.yaml)
+          github_key=${github_key##github_access_token: }  
+          gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=${{ github.ref }}  --config ./deployment/cloud/cloudbuild.yaml
+      
+      # Deploy image to the GKE cluster
+      - name: Deploy
+        run: |-
+          kubectl set image deployment/$DEPLOYMENT_NAME -n grader-k8-namespace gofer-v2=gcr.io/data8x-scratch/gofer:${{ github.ref }} --record
+          kubectl get services -o wide
+          kubectl rollout status deployment/$DEPLOYMENT_NAME -n grader-k8-namespace

@@ -9,12 +9,12 @@ def submit_test():
 
     data = json.loads(data)
     js = {'nb': data}
-    # response = requests.post('http://grading.data8x.berkeley.edu:10101/services/gofer_nb/', data=json.dumps(js))
-    # response = requests.post('https://hubv2-staging.data8x.berkeley.edu/services/gofer_nb/', data=json.dumps(js))
-    for x in range(100):
-        # response = requests.post('http://localhost:10101/services/gofer_nb/', data=json.dumps(js))
-        # response = requests.post('http://grading.data8x.berkeley.edu:10101/services/gofer_nb/', data=json.dumps(js))
-        response = requests.post('https://hubv2-staging.data8x.berkeley.edu/services/gofer_nb/', data=json.dumps(js))
+    #  response = requests.post('http://grading.data8x.berkeley.edu:10101/services/gofer_nb/', data=json.dumps(js))
+    #  response = requests.post('https://hubv2-staging.data8x.berkeley.edu/services/gofer_nb/', data=json.dumps(js))
+    for x in range(1):
+        response = requests.post('http://localhost:10101/services/gofer_nb/', data=json.dumps(js))
+        #  response = requests.post('http://grading.data8x.berkeley.edu:10101/services/gofer_nb/', data=json.dumps(js))
+        #  response = requests.post('https://hubv2-staging.data8x.berkeley.edu/services/gofer_nb/', data=json.dumps(js))
         print(response)
 
 

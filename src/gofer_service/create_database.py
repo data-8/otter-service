@@ -46,7 +46,7 @@ def main():
     Creates the db_path, connection and table
 
     """
-    try:  
+    try:
         db_path = os.getenv("VOLUME_PATH") + '/gradebook.db'
         conn = create_connection(db_path)
         create_table(conn)

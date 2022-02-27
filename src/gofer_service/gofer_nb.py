@@ -29,6 +29,7 @@ from gofer_service import create_database
 prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
 SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
+GOFER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("GOFER_LOG_FILE")
 ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
 ERROR_PATH = f"{VOLUME_PATH}/" + os.getenv("ERROR_PATH")
 SUBMISSIONS_PATH = f"{VOLUME_PATH}/" + os.getenv("SUBMISSIONS_PATH")
@@ -118,8 +119,10 @@ async def post_grade(user_id, grade, course, section, assignment):
             # Make sure that it's placed in the working directory of the service (pwdx <PID>)
             course_config = json.load(filename)
 
-        course_id = course_config[course][section]["course_id"],
+        course_id = course_config[course][section]["course_id"]
         assignment_id = course_config[course][section]["assignments"][assignment]
+
+        log_info_csv(user_id, course, section, assignment, f"Edx Course Config Loaded: Course Id: {course_id}, Assignment_id: {assignment_id}")
 
         sourced_id = create_sourced_id(course_id, assignment_id)
         outcomes_url = create_post_url(course_id, assignment_id)
@@ -197,6 +200,9 @@ async def post_grade(user_id, grade, course, section, assignment):
         status = response_tree.find('.//{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_statusInfo')
         code_major = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_codeMajor').text
         desc = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_description').text
+
+        log_info_csv(user_id, course, section, assignment, f"Posted to Edx: code: {code_major}, desc: {desc}")
+
         if code_major != 'success':
             raise GradePostException(desc)
 
@@ -226,13 +232,14 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         assignment = None
         user = {}
         course = "8x"
-        timestamp = str(time.time())
+        timestamp = get_timestamp()
+        using_test_user = False
         try:
             # Accept notebook submissions, saves, then grades them
             user = self.get_current_user()
             if user is None:
                 user = {"name": os.getenv("TEST_USER")}
-
+                using_test_user = True
             req_data = tornado.escape.json_decode(self.request.body)
             # in the future, assignment should be metadata in notebook
             if 'nb' in req_data:
@@ -252,6 +259,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             if notebook is None or section is None or assignment is None:
                 raise GradeSubmissionException("Notebook does not have required metadata or maybe no notebook in post")
 
+            log_info_csv(user["name"], course, section, assignment, f"User logged in at {timestamp} -  TEST_USER: {using_test_user}")
             # save notebook submission with user id and time stamp
             submission_file = f"{VOLUME_PATH}/submissions/{user['name']}_{section}_{assignment}_{timestamp}.ipynb"
             with open(submission_file, 'w', encoding="utf8") as outfile:
@@ -263,7 +271,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             args["assignments"] = assignment
             args["name"] = user["name"]
             args["submission_file"] = submission_file
-            args["timestamp"] = timestamp
+            args["timestamp"] = str(timestamp)
 
             tornado.ioloop.IOLoop.current().spawn_callback(self._grade_and_post, args)
 
@@ -300,19 +308,52 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         try:
             # Grade assignment
             grade = await grade_assignment(file_path, section, assignment)
+            log_info_csv(name, course, section, assignment, f"Grade: {grade}")
             # Write the grade to a sqlite database
             grade_info = (name, grade, section, assignment, timestamp)
             db_path = f"{VOLUME_PATH}/gradebook.db"
             write_grade(grade_info, db_path)
+            log_info_csv(name, course, section, assignment, f"Grade Written to database: {grade}")
 
             if os.getenv("POST_GRADE").lower() in ("true", '1', 't'):
                 await post_grade(name, grade, course, section, assignment)
             else:
+                log_info_csv(name, course, section, assignment, f"Grade NOT posted to EdX on purpose: {grade}")
                 raise GradePostException("NOT POSTING Grades on purpose; see deployment-config-encrypted.yaml -- POST_GRADE")
         except GradePostException as gp:
             log_error_csv(timestamp, name, section, assignment, str(gp))
         except Exception as ex:
             log_error_csv(timestamp, name, section, assignment, str(ex))
+
+
+def get_timestamp():
+    """
+    returns the time stamp in PST Time
+    """
+    utc_now = pytz.utc.localize(datetime.datetime.utcnow())
+    pst_now = utc_now.astimezone(pytz.timezone("America/Los_Angeles"))
+    return pst_now.strftime("%Y-%m-%d-%H:%M:%S.%f")[:-3]
+
+
+def log_info_csv(username, course, section, assignment, msg):
+    """
+    This logs information in the chain of events -- user logs in and submits,
+    graded, posted to Edx
+
+    :param username: the username
+    :param course: the course
+    :param section: the section
+    :param assignment: the assignment
+    :param msg: optional message to logs
+    """
+    if os.getenv("VERBOSE_LOGGING") == "True":
+        try:
+            data_frame = pd.read_csv(GOFER_LOG_FILE)
+        except Exception:
+            data_frame = pd.DataFrame(columns=["timestamp", "username", "course", "section", "assignment", "message"])
+
+        data_frame.loc[len(data_frame.index)] = [get_timestamp(), username, course, section, assignment, msg]
+        data_frame.to_csv(GOFER_LOG_FILE, index=False)
 
 
 def log_error_csv(timestamp, username, section, assignment, msg):
@@ -330,9 +371,6 @@ def log_error_csv(timestamp, username, section, assignment, msg):
     except Exception:
         data_frame = pd.DataFrame(columns=["timestamp", "username", "section", "assignment", "error", "filename"])
 
-    utc_now = pytz.utc.localize(datetime.datetime.utcnow())
-    pst_now = utc_now.astimezone(pytz.timezone("America/Los_Angeles"))
-    time_zone = pst_now.strftime("%Y/%m/%d %H:%M:%S.%f")[:-3]
     filename = timestamp + "_" + str(username)
     trace = f"User: {username}\nSection: {section}\nAssignment: {assignment}\n\n"
     trace += str(traceback.format_exc())
@@ -340,7 +378,7 @@ def log_error_csv(timestamp, username, section, assignment, msg):
     with open(f"{ERROR_PATH}/{filename}.txt", "a+", encoding="utf8") as file_handle:
         file_handle.write(trace)
 
-    data_frame.loc[len(data_frame.index)] = [time_zone, username, section, assignment, msg, filename]
+    data_frame.loc[len(data_frame.index)] = [timestamp, username, section, assignment, msg, filename]
     data_frame.to_csv(ERROR_FILE, index=False)
 
 

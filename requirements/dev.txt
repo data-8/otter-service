@@ -1,5 +1,7 @@
 -r prod.txt
+datascience
 pytest
 pytest-async
 pytest-tornasync
 pytest-env
+.

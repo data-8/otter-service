@@ -51,7 +51,7 @@ def test_write_grade(setup_db):
 def test_create_post_url():
     os.environ['EDX_URL'] = "edge.edx.org"
     url = gn.create_post_url("BerkeleyX+Data8.1x+2021", "6333e19d6b4d46f88df671ba50f616d8")
-    assert url == "https://edge.edx.org/courses/course-v1:BerkeleyX+Data8.1x+2021/xblock/block-v1:BerkeleyX+Data8.1x+2021+type@lti_consumer+block@6333e19d6b4d46f88df671ba50f616d8/handler_noauth/outcome_service_handler"
+    assert "BerkeleyX+Data8.1x+2021/xblock/block-v1:BerkeleyX+Data8.1x+2021+type@lti_consumer+block@6333e19d6b4d46f88df671ba50f616d8" in url
     del os.environ['EDX_URL']
 
 
