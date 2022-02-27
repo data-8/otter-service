@@ -28,6 +28,7 @@ from gofer_service import create_database
 
 prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
+SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
 ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
 ERROR_PATH = f"{VOLUME_PATH}/" + os.getenv("ERROR_PATH")
 SUBMISSIONS_PATH = f"{VOLUME_PATH}/" + os.getenv("SUBMISSIONS_PATH")
@@ -60,17 +61,17 @@ class GradePostException(Exception):
     """
     custom Exception to throw for problems when you post grade
     """
-    def __init__(self, response=None):
-        self.response = response
-        super().__init__()
+    def __init__(self, message=None):
+        self.message = message
+        super().__init__(self.message)
 
 
 class GradeSubmissionException(Exception):
     """
     custom Exception to throw for problems with the submission itself
     """
-    def __init__(self, response=None):
-        self.response = response
+    def __init__(self, message=None):
+        self.message = message
         super().__init__()
 
 
@@ -96,22 +97,35 @@ def create_sourced_id(course_id, assignment_id):
     return f"course-v1%3A{course_id}:{os.environ['EDX_URL']}-{assignment_id}"
 
 
-async def post_grade(user_id, grade, course_id, assignment_id):
+async def post_grade(user_id, grade, course, section, assignment):
     """
     This posts the grade to the LTI server
     :param user_id: the user to post the grade for
     :param grade: the grade as a float
-    :param course_id: the course id for this notebook
-    :param assignment_id:  the assignment id for this notebook
-    :return:
+    :param course: the course this notebook is in
+    :param section: the section this notebook is in
+    :param assignment:  the assignment name for this notebook
     """
-    # TODO: extract this into a real library with real XML parsing
-    # WARNING: You can use this only with data you trust! Beware, etc.
     body_hash = ""
     consumer_key = ""
     try:
+        # post grade to EdX
+        with open(f'{os.environ["COURSE_CONFIG_PATH"]}', 'r', encoding="utf8") as filename:
+            # Course DEPENDENT configuration file
+            # Should contain page for hitting the gradebook (outcomes_url)
+            # as well as resource IDs for assignments
+            # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
+            # Make sure that it's placed in the working directory of the service (pwdx <PID>)
+            course_config = json.load(filename)
+
+        course_id = course_config[course][section]["course_id"],
+        assignment_id = course_config[course][section]["assignments"][assignment]
+
         sourced_id = create_sourced_id(course_id, assignment_id)
         outcomes_url = create_post_url(course_id, assignment_id)
+
+        # TODO: extract this into a real library with real XML parsing
+        # WARNING: You can use this only with data you trust! Beware, etc.
         post_xml = r"""
         <?xml version = "1.0" encoding = "UTF-8"?>
         <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
@@ -169,25 +183,22 @@ async def post_grade(user_id, grade, course_id, assignment_id):
             'Content-Type': 'application/xml'
         })
 
-        if os.getenv("POST_GRADE").lower() in ("true", '1', 't'):
-            async with async_timeout.timeout(10):
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(outcomes_url, data=post_data, headers=headers) as response:
-                        resp_text = await response.text()
+        async with async_timeout.timeout(10):
+            async with aiohttp.ClientSession() as session:
+                async with session.post(outcomes_url, data=post_data, headers=headers) as response:
+                    resp_text = await response.text()
 
-                        if response.status != 200:
-                            raise GradePostException(response)
+                    if response.status != 200:
+                        raise GradePostException(response)
 
-            response_tree = etree.fromstring(resp_text.encode('utf-8'))
+        response_tree = etree.fromstring(resp_text.encode('utf-8'))
 
-            # XML and its namespaces. UBOOF!
-            status = response_tree.find('.//{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_statusInfo')
-            code_major = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_codeMajor').text
-            desc = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_description').text
-            if code_major != 'success':
-                raise GradePostException(desc)
-        else:
-            raise GradePostException("NOT POSTING Grades on purpose; see deployment-config.yaml -- POST_GRADE")
+        # XML and its namespaces. UBOOF!
+        status = response_tree.find('.//{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_statusInfo')
+        code_major = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_codeMajor').text
+        desc = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_description').text
+        if code_major != 'success':
+            raise GradePostException(desc)
 
     except GradePostException as grade_post_exception:
         raise grade_post_exception
@@ -274,6 +285,12 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             log_error_csv(timestamp, user['name'], section, assignment, str(ex))
 
     async def _grade_and_post(self, args):
+        """
+        This is called by spawn_callback method on the IOLoop to move the actual grading and
+        posting of the grade out of the main thread.
+
+        :param args course, section, assignments, name, submission_file, timestamp coming from post method above
+        """
         course = args["course"]
         section = args["section"]
         assignment = args["assignments"]
@@ -288,22 +305,12 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
             db_path = f"{VOLUME_PATH}/gradebook.db"
             write_grade(grade_info, db_path)
 
-            # post grade to EdX
-            with open(f'{os.environ["COURSE_CONFIG_PATH"]}', 'r', encoding="utf8") as filename:
-                # Course DEPENDENT configuration file
-                # Should contain page for hitting the gradebook (outcomes_url)
-                # as well as resource IDs for assignments
-                # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
-                # Make sure that it's placed in the working directory of the service (pwdx <PID>)
-                course_config = json.load(filename)
-
-            await post_grade(name, grade,
-                             course_config[course][section]["course_id"],
-                             course_config[course][section]["assignments"][assignment])
-
-        except GradePostException:
-            msg = "GradePostException: See log file for traceback"
-            log_error_csv(timestamp, name, section, assignment, msg)
+            if os.getenv("POST_GRADE").lower() in ("true", '1', 't'):
+                await post_grade(name, grade, course, section, assignment)
+            else:
+                raise GradePostException("NOT POSTING Grades on purpose; see deployment-config-encrypted.yaml -- POST_GRADE")
+        except GradePostException as gp:
+            log_error_csv(timestamp, name, section, assignment, str(gp))
         except Exception as ex:
             log_error_csv(timestamp, name, section, assignment, str(ex))
 
@@ -337,14 +344,6 @@ def log_error_csv(timestamp, username, section, assignment, msg):
     data_frame.to_csv(ERROR_FILE, index=False)
 
 
-class CsvHandler(logging.FileHandler):
-    """
-    this handles the logging any error to CSV file for quick reference
-    """
-    def emit(self, record):
-        log_error_csv(str(time.time()), None, None, None, traceback.format_exc())
-
-
 def start_server():
     """
     start the tornado server listening on port 10101 - I seperated this function from the main()
@@ -355,7 +354,10 @@ def start_server():
     app = tornado.web.Application([(prefix, GoferHandler)])
 
     logger = logging.getLogger('tornado.application')
-    logger.addHandler(CsvHandler(ERROR_FILE))
+    file_handler = logging.FileHandler(SERVER_LOG_FILE)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
     app.listen(10101)
 
     return app
@@ -365,16 +367,19 @@ def main():
     """
     This sets up the paths needed for gofer and starts tornado
     """
-    if not os.path.exists(ERROR_PATH):
-        os.makedirs(ERROR_PATH)
-    if not os.path.exists(SUBMISSIONS_PATH):
-        os.makedirs(SUBMISSIONS_PATH)
+    try:
+        if not os.path.exists(ERROR_PATH):
+            os.makedirs(ERROR_PATH)
+        if not os.path.exists(SUBMISSIONS_PATH):
+            os.makedirs(SUBMISSIONS_PATH)
 
-    if not os.path.exists(DB_PATH):
-        create_database.main()
-
-    start_server()
-    tornado.ioloop.IOLoop.current().start()
+        if not os.path.exists(DB_PATH):
+            create_database.main()
+        start_server()
+        logging.getLogger('tornado.application').info("Starting Server")
+        tornado.ioloop.IOLoop.current().start()
+    except Exception:
+        logging.getLogger('tornado.application').error(traceback.format_exc())
 
 
 if __name__ == '__main__':

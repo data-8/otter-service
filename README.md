@@ -23,6 +23,10 @@ metadata:{
 }
 ```
 
+## Course config path
+Please see the reposiotry `data-8/materials-x22-private`. The repository houses a config file, 8x_course_config_edge.json and 8x_course_config.json. The system relies on this file specified in the environment variable, `COURSE_CONFIG_PATH`, to know which lab is associated with which assignment id in EdX. If you are not posting grades to an LTI server, than you do not need to worry about this.
+
+
 ## Test files
 This gets tricky. The notebooks and the corresponding test files used by this service are of course connected. The files `Dockerfile` and `Dockerfile-dev` (used for local testing) download the current set of test files from the repository, `materials-x22-private`, for the `materials-x22` notebooks. If you bring in different notebooks, you would need to change the two dockerfiles to bring in the corresponding tests. 
 
@@ -43,7 +47,7 @@ The system posts the grade back to the EdX via LTI. You need to have the `LTI_CO
 
 This is the current deployment configuration. We deploy the gofer_service to gcloud and there is a re-direct from the Jupyterhub [configuration files](https://github.com/berkeley-dsep-infra/datahub/blob/7fed76f46e3636b3be225f1b149911aa9f1c6b1b/deployments/data8x/config/common.yaml#L22) in the [datahub repository](https://github.com/berkeley-dsep-infra/datahub/tree/staging/deployments/data8x/config) that passes authentication information to gofer_service.
 
-Once the GKE cluster is created in gcloud, executing the `deployment/cloud/deploy.sh` file  deploys the service to the cloud. There is also a `deployment/cloud/deploy-remove.sh` file that takes everything down minus the GKE cluster itself. This file is of course destructive and should only be used if you know what you are doing.
+Once the GKE cluster is created in gcloud, executing the `deployment/cloud/deploy.sh` file  deploys the service to the cloud. 
 
 # Local installation for testing/developing
 

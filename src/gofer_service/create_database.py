@@ -12,8 +12,8 @@ def create_connection(db_fname):
     try:
         conn = sqlite3.connect(db_fname)
         return conn
-    except Error as e:
-        print(e)
+    except Exception as e:
+        raise e
 
     return None
 
@@ -37,8 +37,8 @@ def create_table(conn):
     try:
         c = conn.cursor()
         c.execute(create_sql_table_stmt)
-    except Error as e:
-        print(e)
+    except Exception as e:
+        raise e
 
 
 def main():
@@ -46,10 +46,13 @@ def main():
     Creates the db_path, connection and table
 
     """
-    db_path = os.getenv("VOLUME_PATH") + '/gradebook.db'
-    conn = create_connection(db_path)
-    create_table(conn)
-    conn.close()
+    try:  
+        db_path = os.getenv("VOLUME_PATH") + '/gradebook.db'
+        conn = create_connection(db_path)
+        create_table(conn)
+        conn.close()
+    except Exception as e:
+        raise e
 
 
 if __name__ == '__main__':

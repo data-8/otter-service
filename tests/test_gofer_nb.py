@@ -7,7 +7,7 @@ from helper import make_db, create_connection
 @pytest.fixture
 def app():
     os.environ["VOLUME_PATH"] = "/tmp/gofer"
-    error_file = "tornado_errors.csv"
+    error_file = os.environ["SERVER_LOG_FILE"]
     os.makedirs(os.environ["VOLUME_PATH"], exist_ok=True)
     gn.ERROR_FILE = os.environ["VOLUME_PATH"] + f"/{error_file}"
     return gn.start_server()
@@ -31,6 +31,7 @@ async def test_http_client(http_server_client):
     os.remove(gn.ERROR_FILE)
     os.rmdir(os.environ["VOLUME_PATH"])
     del os.environ["VOLUME_PATH"]
+
 
 def test_write_grade(setup_db):
     db_conn, db_path = setup_db
