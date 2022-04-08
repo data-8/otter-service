@@ -33,8 +33,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
           body: ${{steps.build_changelog.outputs.changelog}}
           draft: false
           prerelease: false
@@ -50,6 +50,7 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
   setup-and-deploy:
+      needs: release
       name: Setup and Deploy
       runs-on: ubuntu-latest
 
@@ -101,11 +102,11 @@ jobs:
         run: |-
           github_key=$(sops -d src/gofer_service/secrets/gh_key.yaml)
           github_key=${github_key##github_access_token: }  
-          gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=${{ github.ref }}  --config ./deployment/cloud/cloudbuild.yaml
+          gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=${{ github.ref_name }}  --config ./deployment/cloud/cloudbuild.yaml
       
       # Deploy image to the GKE cluster
       - name: Deploy
         run: |-
-          kubectl set image deployment/$DEPLOYMENT_NAME -n grader-k8-namespace gofer-v2=gcr.io/data8x-scratch/gofer:${{ github.ref }} --record
+          kubectl set image deployment/$DEPLOYMENT_NAME -n grader-k8-namespace gofer-v2=gcr.io/data8x-scratch/gofer:${{ github.ref_name }} --record
           kubectl get services -o wide
           kubectl rollout status deployment/$DEPLOYMENT_NAME -n grader-k8-namespace
