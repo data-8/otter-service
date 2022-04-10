@@ -4,7 +4,6 @@ metadata:
   name: gofer-volume
   labels:
     name: gofer-volume
-  namespace: grader-k8-namespace
 spec:
   capacity:
     storage: 4Gi
@@ -18,4 +17,4 @@ spec:
     - nfsvers=4.1
   nfs:
     path: /data
-    server: 10.128.0.31
+    server: set_on_deploy_automatically

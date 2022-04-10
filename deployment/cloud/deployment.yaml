@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gofer-pod
-  namespace: grader-k8-namespace
   labels:
     app: gofer-v2
 spec:
