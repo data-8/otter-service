@@ -57,9 +57,22 @@ If we deploy and find problems the quickest way to rollback the deployment is to
 - kubectl rollout undo deployment/gofer-pod -n grader-k8-namespace --to-revision=#
 
 ## CI/CD:
-If you push a tag in the standard form of a version number(XX.XX.XX), github action creates a release from this tag, pushes the release to pypi.org, builds the docker image, pushes it google's image repository and deploys the new image into the GKE cluster.
+If you push a tag in the standard form of a version number(XX.XX.XX), GitHub action creates a release from this tag, pushes the release to pypi.org, builds the docker image, pushes it google's image repository and deploys the new image into the GKE cluster.
 
+## pod size recommendations
+There is a vertical pod autoscaler deployed to recommend memory and cpu sizing to the gofer-pod pods.
+You can see recommendations via either of these commands:
+- kubectl get vpa -n grader-k8-namespace
+- kubectl get vpa -n grader-k8-namespace --output yaml
 
+It is called an autoscaler but I configured the resource to just recommend and not actually autoscale vertically.
+
+## pod horizontal scaling
+A horizontal autoscale is configured to spin up a new pod when 80% of CPU requested is utilized. There is maximum
+of 10 pods allowed.
+
+You can see the status of the horizontal scaling via this command:
+- kubectl get hpa -n grader-k8-namespace
 
 # Local installation for testing/developing
 
@@ -91,7 +104,7 @@ networks:
 ```
 
 Notes:
-- GIT_ACCESS_TOKEN is generated in your github account. This is used to download the materials-x22-private archive to the gofer_service docker image -- if you have test files somewhere else and they are not in a private repo this is unnecessary and you would need to change the relevant lines in the Dockerfile and Dockerfile-dev files.
+- GIT_ACCESS_TOKEN is generated in your GitHub account. This is used to download the materials-x22-private archive to the gofer_service docker image -- if you have test files somewhere else and they are not in a private repo this is unnecessary and you would need to change the relevant lines in the Dockerfile and Dockerfile-dev files.
 
 - .local-env These are environment variables that must be set. They mirror the variables in  `deployment/cloud/deployment-config-encrypted.yaml`. You do not need to encrypt your local-env file with sops. 
 
