@@ -22,6 +22,7 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     
     NFS_IP=$(gcloud compute addresses list --filter="name=( 'gofer-nfs-$branch_name-private-ip')" --format="get(address)")
     yq eval ".spec.nfs.server=\"$NFS_IP\"" -i deployment/cloud/deployment-persistent-volume.yaml
+    yq eval ".metadata.name=\"gofer-volume-$branch_name\"" -i deployment/cloud/deployment-persistent-volume.yaml
     kubectl apply -f ./deployment/cloud/deployment-persistent-volume.yaml 
     kubectl apply -f ./deployment/cloud/deployment-persistent-volume-claim.yaml
     
