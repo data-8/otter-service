@@ -22,9 +22,9 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
             solutions_path = '/opt/materials-x22-private/materials/x22/{assign_type}/{sec}/{assignment}/autograder.zip'
         zip_path = solutions_path.format(assign_type=assign_type, sec=sec, assignment=assignment)
         command = [
-            'otter', 'run',
+            'otter', 'grade',
             '-a',
-            zip_path,
+            zip_path, '-p',
             submission
         ]
         process = await asyncio.create_subprocess_exec(
