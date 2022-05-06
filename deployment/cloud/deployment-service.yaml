@@ -9,4 +9,4 @@ spec:
     - port: 10101
       targetPort: 10101
   type: LoadBalancer
-  loadBalancerIP: "34.70.18.176"
+  loadBalancerIP: "34.66.228.116"

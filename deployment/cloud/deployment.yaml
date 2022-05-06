@@ -14,7 +14,7 @@ spec:
       labels:
         app: gofer-v2
     spec:
-      serviceAccountName: grader-k8-sa
+      serviceAccountName: gofer-k8-sa
       containers:
         - name: gofer-v2
           image: gcr.io/data8x-scratch/gofer:latest
@@ -35,8 +35,8 @@ spec:
               name: gofer-mnt
           envFrom:
             - configMapRef:
-                name: grader-env
+                name: gofer-env
       volumes:
         - name: gofer-mnt
           persistentVolumeClaim:
-            claimName: gofer-claim
+            claimName: gofer-nfs-claim

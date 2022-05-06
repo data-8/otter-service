@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: grader-env
+    name: gofer-env
 data:
     POST_GRADE: "True"
     VERBOSE_LOGGING: "True"
