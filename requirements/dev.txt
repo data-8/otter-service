@@ -4,4 +4,4 @@ pytest
 pytest-async
 pytest-tornasync
 pytest-env
-.
+-e .

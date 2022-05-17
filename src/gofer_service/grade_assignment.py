@@ -47,14 +47,7 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
             if "warning" not in line.lower():
                 cmd = ' '.join(command)
                 raise Exception(f"Found unrecognized output in stderr from {cmd}, halting, line was {line}")
-        lines = stdout.decode("utf-8").strip().split("\n")
-        grade = None
-        for line in lines:
-            if "Total Score" in line:
-                score = line.split(" ")
-                raw = float(score[2])
-                total = float(score[4])
-                grade = raw / total
+        grade = stdout.decode("utf-8").strip()
         if grade is None:
             raise Exception(f"Unable to determine grade coming from otter on: {submission}")
         return grade

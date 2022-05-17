@@ -63,20 +63,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Configure Workload Identity Federation and generate an access token. This is the preferred method but sops
-      # does not us Oauth2 -- apparently is v3.7.3 it will be integrated
-      # - id: 'auth'
-      #   name: 'Authenticate to Google Cloud'
-      #   uses: 'google-github-actions/auth@v0'
-      #   with:
-      #     workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/grader-pool/providers/github-actions'
-      #     service_account: 'grader-sa@data8x-scratch.iam.gserviceaccount.com'
-
+      #Configure Workload Identity Federation and generate an access token. This is the preferred method but sops
+      #does not us Oauth2 -- apparently is v3.7.3 it will be integrated
       - id: 'auth'
-        name: 'Authenticate to Google Cloud - JSON'
+        name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v0'
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+          workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/grader-pool/providers/github-actions'
+          service_account: 'grader-sa@data8x-scratch.iam.gserviceaccount.com'
+
+      # - id: 'auth'
+      #   name: 'Authenticate to Google Cloud - JSON'
+      #   uses: 'google-github-actions/auth@v0'
+      #   with:
+      #     credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       - name: 'Use gcloud CLI'
         run: 'gcloud info'

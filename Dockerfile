@@ -16,7 +16,7 @@ RUN apt-get install -y python3 && \
 
 # install golang to support sops(python-sops does nto work with GCP KMS)
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
-    go install go.mozilla.org/sops/v3/cmd/sops@v3.7.1
+    go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
 COPY ./requirements/prod.txt /opt/gofer_service/prod.txt
 RUN python3 -m pip install -r /opt/gofer_service/prod.txt
