@@ -6,7 +6,7 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+' # Push events to any matching semantic tag. For example, 1.10.1 or 2.0.0.
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: grader-cluster 
+  GKE_CLUSTER: gofer-cluster 
   GKE_ZONE: us-central1
   DEPLOYMENT_NAME: gofer-pod
 
@@ -69,8 +69,8 @@ jobs:
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v0'
         with:
-          workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/grader-pool/providers/github-actions'
-          service_account: 'grader-sa@data8x-scratch.iam.gserviceaccount.com'
+          workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/gofer-pool/providers/github-actions'
+          service_account: 'gofer-sa@data8x-scratch.iam.gserviceaccount.com'
 
       # - id: 'auth'
       #   name: 'Authenticate to Google Cloud - JSON'
@@ -107,6 +107,6 @@ jobs:
       # Deploy image to the GKE cluster
       - name: Deploy
         run: |-
-          kubectl set image deployment/$DEPLOYMENT_NAME -n grader-k8-namespace gofer-v2=gcr.io/data8x-scratch/gofer:${{ github.ref_name }} --record
+          kubectl set image deployment/$DEPLOYMENT_NAME -n gofer-k8-namespace gofer-v2=gcr.io/data8x-scratch/gofer:${{ github.ref_name }} --record
           kubectl get services -o wide
-          kubectl rollout status deployment/$DEPLOYMENT_NAME -n grader-k8-namespace
+          kubectl rollout status deployment/$DEPLOYMENT_NAME -n gofer-k8-namespace

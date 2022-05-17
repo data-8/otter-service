@@ -13,3 +13,4 @@ sops-v3.7.1.linux
 sops.linux
 .pylintrc
 settings.json
+__pycache__
