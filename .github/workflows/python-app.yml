@@ -44,8 +44,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements/dev.txt ]; then pip install -r requirements/dev.txt; fi
-        python -m pip install scikit-learn
-        python -m pip install -e git+https://github.com/sean-morris/otter-grader.git@beta#egg=otter-grader
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

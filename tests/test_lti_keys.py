@@ -11,7 +11,6 @@ def setup():
         del os.environ['LTI_CONSUMER_KEY']
 
 
-#@pytest.mark.skip(reason="in order to use gcp workload identity pool via Github Actions we need to sops to update to oauth2")
 def test_get_sops():
     secrets_path = os.path.join(os.path.dirname("."), "tests/test_files/gke_key.yaml")
     sops_path = "sops"
