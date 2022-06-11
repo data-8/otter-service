@@ -1,4 +1,4 @@
-import gofer_service.create_database as cb
+import otter_service.create_database as cb
 import os
 import pytest
 from helper import make_db, create_connection

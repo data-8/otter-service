@@ -1,36 +1,35 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: grader-env
+    name: otter-env
 data:
     POST_GRADE: "True"
     VERBOSE_LOGGING: "True"
-    EDX_URL: edge.edx.org
-    COURSE_CONFIG_PATH: /opt/materials-x22-private/8x_course_config_edge.json
+    EDX_URL: courses.edx.org
+    COURSE_CONFIG_PATH: /opt/materials-x22-private/8x-course-config.json
     GCP_PROJECT_ID: data8x-scratch
     VOLUME_PATH: /mnt/data
-    GOFER_LOG_FILE: gofer_service_logs.txt
-    SERVER_LOG_FILE: tornado_server_log.txt
-    ERROR_FILE: gofer_service_errors.csv
-    ERROR_PATH: gofererrors
+    OTTER_LOG_FILE: otter-service-logs.txt
+    SERVER_LOG_FILE: tornado-server-log.txt
+    ERROR_FILE: otter-service-errors.csv
+    ERROR_PATH: ottererrors
     SUBMISSIONS_PATH: submissions
     DB_PATH: gradebook.db
-    JUPYTERHUB_SERVICE_PREFIX: /services/gofer_nb/
     JUPYTERHUB_API_URL: https://hubv2.data8x.berkeley.edu/hub/api
     JUPYTERHUB_BASE_URL: https://hubv2.data8x.berkeley.edu
-    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:XpG3/H7kiqbuW6ah+DuH4cLhk8RI8zTtUOLbxHLL2qgVa6/vyv3hCnoVxjsX6StNDYK+mkegmvFggCOpdVxJ1Q==,iv:aQbSp79d6HQ3zVQnvGuchzedupLQJVCYu+ZhXmqFR+o=,tag:sLjLmo8+Hb1KSvkWSFxesg==,type:str]
-    TEST_USER: ed1c44871f37325b7e085b6d191f0a4b
+    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:gO5CBWxYZAkkEfA0dMA5fqj4xv2hGd/CgCHcXj4We/H/p+7XttNyUveLaXtxkzFUmdSwCZ8qRPcfqaX3gAfmiA==,iv:x8O0M4hINvjDQM64RFBzG/XZjkOAfCTd4AF+Jsvovow=,tag:v9aKgTS5u9Jr1YAYRuVhhw==,type:str]
+    TEST_USER: 594aed203b01b16a7a025c2f3e037933
 sops:
     kms: []
     gcp_kms:
-        - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/gofer_service
-          created_at: "2022-02-22T15:37:13Z"
-          enc: CiQAhlmpT0ZBoYTyEJewrxbtaJujOLyyWDRwvBRjYMW9jGTGUGoSSQB0yZRE7b/lFSdvGrMyasgAzORobRIzmFOglM0S6AW43hJB7NYcdK5QOiN7aSQJ4ciQliH6cxeY570HfLjmHf9yuzXz5j/xOBQ=
+        - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/otter-service
+          created_at: "2022-06-10T16:39:32Z"
+          enc: CiQA+mtdj524tdeSJbBIQhRBU/nNGALmMfGG5s4bk+DmTqY8wvoSSQCnWbpGwIb2rEzIKAWxL40kOPlDzK2rbktYUoQBF7z9EuKLY6zUYQR5LBJhYbVjuJL+IHxmA3oaPQln46qj3s0QcBQUvsJoLH0=
     azure_kv: []
     hc_vault: []
     age: []
-    lastmodified: "2022-02-22T15:37:14Z"
-    mac: ENC[AES256_GCM,data:ZTi3wLqE1pFV/VPMJhF+UZ8iQk0fJHgaAwNuYAs2vqiGm6ieounwgBZPq8+x5L7+GH2kfsVD2qz/aJ1ZVO168/jwOWbn3RMF4m7rcsDU7QcWlibhu0QP8J2gh7ct11j1tpjBam1iBdoyTHxQ1frDmfeolicenZQVAL4iTdXZky0=,iv:436i2vM7BZtpnHg4uMFNTga4vVNFPYoKNwMVpVSgnkU=,tag:xVGpOftcL1lz/UHvnXu4lw==,type:str]
+    lastmodified: "2022-06-10T16:39:32Z"
+    mac: ENC[AES256_GCM,data:V8W+EVznwQDzGS+Y+Rg1ify3F+dfepRCVxmVDVcdpO+9vTZ7E5NF4XUqn3CPLEsWfoAu5sPmZniHS9RSBpiDIBpK1xLlqoZSzj49xffa4FMlccLI/azWGV/c7mjOnb0YVS32SEpSizZ3/NWcyRJVGDEFJmSYhuODzIakIwPDKhA=,iv:IxPHG6aRChML0NAN426wUZB9N5E3CABnGnVRwyx1k54=,tag:xBBtZqkL9rZ/10uZh+gPcw==,type:str]
     pgp: []
     encrypted_suffix: _TOKEN
     version: 3.7.1

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: gofer-lb
+  name: otter-lb
 spec:
   selector:
-    app: gofer-v2
+    app: otter-srv
   ports:
     - port: 10101
       targetPort: 10101
   type: LoadBalancer
-  loadBalancerIP: "34.70.18.176"
+  loadBalancerIP: "34.134.165.169"

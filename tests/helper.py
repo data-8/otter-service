@@ -6,7 +6,7 @@ from sqlite3 import Error
 def create_table(conn):
     """Creates schema within the database.
 
-    This should match the section in gofer_nb.py that writes to the database.
+    This should match the section in otter_nb.py that writes to the database.
     Feel free to customize this if you store different metadata (e.g. section/lab).
     """
     create_sql_table_stmt = """ CREATE TABLE IF NOT EXISTS grades (
@@ -40,8 +40,8 @@ def insert_test_record(conn):
     try:
         with conn:
             conn.execute(sql_cmd, ("TEST_USER", 3.0, "1", "lab99", "1111"))
-    except Exception as e:
-        raise Exception(f"Error inserting into database for the following record")
+    except Exception:
+        raise Exception("Error inserting into database for the following record")
 
 
 def make_db(db_fname):

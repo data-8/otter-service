@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gofer-pod
+  name: otter-pod
   labels:
-    app: gofer-v2
+    app: otter-srv
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: gofer-v2
+      app: otter-srv
   template:
     metadata:
       labels:
-        app: gofer-v2
+        app: otter-srv
     spec:
-      serviceAccountName: grader-k8-sa
+      serviceAccountName: otter-k8-sa
       containers:
-        - name: gofer-v2
-          image: gcr.io/data8x-scratch/gofer:latest
+        - name: otter-srv
+          image: gcr.io/data8x-scratch/otter-srv:latest
           imagePullPolicy: Always
           resources:
             limits:
@@ -32,11 +32,11 @@ spec:
             - containerPort: 10101
           volumeMounts:
             - mountPath: "/mnt/data"
-              name: gofer-mnt
+              name: otter-mnt
           envFrom:
             - configMapRef:
-                name: grader-env
+                name: otter-env
       volumes:
-        - name: gofer-mnt
+        - name: otter-mnt
           persistentVolumeClaim:
-            claimName: gofer-claim
+            claimName: otter-claim
