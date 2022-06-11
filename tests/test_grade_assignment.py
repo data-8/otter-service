@@ -1,5 +1,5 @@
 import pytest
-import gofer_service.grade_assignment as ga
+import otter_service.grade_assignment as ga
 import os
 
 

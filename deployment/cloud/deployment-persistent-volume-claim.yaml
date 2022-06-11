@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: gofer-claim
+  name: otter-claim
 spec:
   storageClassName: standard
   accessModes:
@@ -11,4 +11,4 @@ spec:
       storage: 4Gi
   selector:
     matchLabels:
-      name: gofer-volume
+      name: otter-volume

@@ -1,7 +1,7 @@
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ACCESS_TOKEN
-ARG GOFER_SERVICE_VERSION
+ARG OTTER_SERVICE_VERSION
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -19,12 +19,14 @@ RUN apt-get install -y python3 && \
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
-ADD ./requirements/prod.txt /opt/gofer_service/prod.txt
-ADD ./requirements/dev.txt /opt/gofer_service/dev.txt
-RUN python3 -m pip install -r /opt/gofer_service/dev.txt
 
-COPY ./dist/gofer-service-${GOFER_SERVICE_VERSION}.tar.gz /opt/gofer_service/
-RUN python3 -m pip install /opt/gofer_service/gofer-service-${GOFER_SERVICE_VERSION}.tar.gz
+
+ADD ./requirements/prod.txt /opt/otter-service/prod.txt
+ADD ./requirements/dev.txt /opt/otter-service/dev.txt
+RUN python3 -m pip install -r /opt/otter-service/dev.txt
+
+COPY ./dist/otter_service-${OTTER_SERVICE_VERSION}.tar.gz /opt/otter-service/
+RUN python3 -m pip install /opt/otter-service/otter_service-${OTTER_SERVICE_VERSION}.tar.gz
 
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 17.03.1-ce
@@ -39,4 +41,4 @@ RUN tar -xzf /opt/main.tar.gz -C /opt && rm /opt/main.tar.gz && mv  /opt/materia
 WORKDIR /opt
 
 EXPOSE 10101
-ENTRYPOINT ["gofer-service"]
+ENTRYPOINT ["otter_service"]

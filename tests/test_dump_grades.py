@@ -1,4 +1,4 @@
-import gofer_service.dump_grades as dg
+import otter_service.dump_grades as dg
 import pytest
 from helper import make_db, create_connection
 import os

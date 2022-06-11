@@ -1,12 +1,13 @@
 import pytest
 import os
-import gofer_service.gofer_nb as gn
+import shutil
+import otter_service.otter_nb as gn
 from helper import make_db, create_connection
 
 
 @pytest.fixture
 def app():
-    os.environ["VOLUME_PATH"] = "/tmp/gofer"
+    os.environ["VOLUME_PATH"] = "/tmp/otter"
     error_file = os.environ["SERVER_LOG_FILE"]
     os.makedirs(os.environ["VOLUME_PATH"], exist_ok=True)
     gn.ERROR_FILE = os.environ["VOLUME_PATH"] + f"/{error_file}"
@@ -25,11 +26,12 @@ def setup_db():
 
 
 async def test_http_client(http_server_client):
-    resp = await http_server_client.fetch('/services/gofer_nb/')
+    resp = await http_server_client.fetch('/')
     assert resp.code == 200
     http_server_client.close()
     os.remove(gn.ERROR_FILE)
-    os.rmdir(os.environ["VOLUME_PATH"])
+    shutil.rmtree(os.environ["VOLUME_PATH"])
+    os.makedirs(os.environ["VOLUME_PATH"])
     del os.environ["VOLUME_PATH"]
 
 

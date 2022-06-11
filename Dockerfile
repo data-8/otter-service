@@ -18,9 +18,9 @@ RUN apt-get install -y python3 && \
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
-COPY ./requirements/prod.txt /opt/gofer_service/prod.txt
-RUN python3 -m pip install -r /opt/gofer_service/prod.txt
-RUN python3 -m pip install gofer-service
+COPY ./requirements/prod.txt /opt/otter-service/prod.txt
+RUN python3 -m pip install -r /opt/otter-service/prod.txt
+RUN python3 -m pip install otter-service
 
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 17.03.1-ce
@@ -34,4 +34,4 @@ RUN tar -xzf /opt/main.tar.gz -C /opt && rm /opt/main.tar.gz && mv  /opt/materia
 WORKDIR /opt
 
 EXPOSE 10101
-ENTRYPOINT ["gofer-service"]
+ENTRYPOINT ["otter_service"]

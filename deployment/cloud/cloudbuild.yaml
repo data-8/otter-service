@@ -1,12 +1,12 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'build', '-t', 'gcr.io/data8x-scratch/gofer:$_TAG_NAME', '-t', 'gcr.io/data8x-scratch/gofer','--build-arg=GIT_ACCESS_TOKEN=$_GITHUB_KEY', '.' ]
+    args: [ 'build', '-t', 'gcr.io/data8x-scratch/otter-srv:$_TAG_NAME', '-t', 'gcr.io/data8x-scratch/otter-srv','--build-arg=GIT_ACCESS_TOKEN=$_GITHUB_KEY', '.' ]
   # push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/data8x-scratch/gofer']
+    args: ['push', 'gcr.io/data8x-scratch/otter-srv']
 images:
-  - 'gcr.io/data8x-scratch/gofer:$_TAG_NAME'
-  - 'gcr.io/data8x-scratch/gofer'
+  - 'gcr.io/data8x-scratch/otter-srv:$_TAG_NAME'
+  - 'gcr.io/data8x-scratch/otter-srv'
 timeout: 1200s
 substitutions:
   _GITHUB_KEY: ""

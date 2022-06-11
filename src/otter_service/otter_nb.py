@@ -21,15 +21,14 @@ import tornado.ioloop
 import tornado.escape
 import tornado.options
 import tornado.gen
-from gofer_service import lti_keys
-from gofer_service.grade_assignment import grade_assignment
-from gofer_service import create_database
+from otter_service import lti_keys
+from otter_service.grade_assignment import grade_assignment
+from otter_service import create_database
 
 
-prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
 SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
-GOFER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("GOFER_LOG_FILE")
+OTTER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("OTTER_LOG_FILE")
 ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
 ERROR_PATH = f"{VOLUME_PATH}/" + os.getenv("ERROR_PATH")
 SUBMISSIONS_PATH = f"{VOLUME_PATH}/" + os.getenv("SUBMISSIONS_PATH")
@@ -348,12 +347,12 @@ def log_info_csv(username, course, section, assignment, msg):
     """
     if os.getenv("VERBOSE_LOGGING") == "True":
         try:
-            data_frame = pd.read_csv(GOFER_LOG_FILE)
+            data_frame = pd.read_csv(OTTER_LOG_FILE)
         except Exception:
             data_frame = pd.DataFrame(columns=["timestamp", "username", "course", "section", "assignment", "message"])
 
         data_frame.loc[len(data_frame.index)] = [get_timestamp(), username, course, section, assignment, msg]
-        data_frame.to_csv(GOFER_LOG_FILE, index=False)
+        data_frame.to_csv(OTTER_LOG_FILE, index=False)
 
 
 def log_error_csv(timestamp, username, section, assignment, msg):
@@ -389,7 +388,7 @@ def start_server():
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
-    app = tornado.web.Application([(prefix, GoferHandler)])
+    app = tornado.web.Application([("/", GoferHandler)])
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)

@@ -21,10 +21,16 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
         if solutions_path is None:
             solutions_path = '/opt/materials-x22-private/materials/x22/{assign_type}/{sec}/{assignment}/autograder.zip'
         zip_path = solutions_path.format(assign_type=assign_type, sec=sec, assignment=assignment)
+        # command = [
+        #     'otter', 'grade',
+        #     '-a',
+        #     zip_path, '-p',
+        #     submission
+        # ]
         command = [
-            'otter', 'grade',
+            'otter', 'run',
             '-a',
-            zip_path, '-p',
+            zip_path,
             submission
         ]
         process = await asyncio.create_subprocess_exec(
@@ -44,13 +50,18 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
             if 'Killed' in line:
                 # Our container was killed, so let's just skip this one
                 raise Exception(f"Container was killed -- nothing will work: {submission}")
-            if "warning" not in line.lower():
-                cmd = ' '.join(command)
-                raise Exception(f"Found unrecognized output in stderr from {cmd}, halting, line was {line}")
-        grade = stdout.decode("utf-8").strip()
+        # grade = stdout.decode("utf-8").strip()
+        # if grade is None or grade == '':
+        #     cmd = ' '.join(command)
+        #     raise Exception(f"Unable to determine grade coming from otter on: {submission} using this commnad: {cmd}")
+        lines = stdout.decode("utf-8").strip().split("\n")
+        grade = None
+        for line in lines:
+            if "Total Score" in line:
+                grade = line.split(" ")[5][1:-2]
         if grade is None:
             raise Exception(f"Unable to determine grade coming from otter on: {submission}")
-        return grade
+        return float(grade) / 100
     except asyncio.TimeoutError:
         raise Exception(f'Grading timed out for {submission}')
     except Exception as e:
