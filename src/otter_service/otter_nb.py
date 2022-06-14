@@ -388,7 +388,7 @@ def start_server():
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
-    app = tornado.web.Application([("/", GoferHandler)])
+    app = tornado.web.Application([("/services/gofer_nb", GoferHandler)])
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
