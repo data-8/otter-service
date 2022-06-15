@@ -39,7 +39,9 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     #for testing and more
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
     kubectl apply -f ./deployment/cloud/deployment.yaml
-
+    
+    kubectl set image deployment/otter-pod -n otter-$branch_name otter-srv=gcr.io/data8x-scratch/otter:$version
+    
     yq eval ".spec.loadBalancerIP=\"$LB_IP\"" -i deployment/cloud/deployment-service.yaml
     kubectl apply -f ./deployment/cloud/deployment-service.yaml
     
