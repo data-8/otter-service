@@ -9,4 +9,4 @@ spec:
     - port: 10101
       targetPort: 10101
   type: LoadBalancer
-  loadBalancerIP: "34.134.165.169"
+  loadBalancerIP: "set-by-script"
