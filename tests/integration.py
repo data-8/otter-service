@@ -4,10 +4,10 @@ import requests
 JUPYTERHUB_SERVICE_PREFIX = "/services/gofer_nb"
 server_map = {
     "local": f"http://localhost:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "staging-lb": f"http://34.134.82.125:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "staging-lb": f"http://35.193.0.244:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "dev-lb": f"http://34.134.165.169:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "prod-lb": f"http://34.70.18.176:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "stage-dns": f"http://grader-staging.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "prod-lb": f"http://35.224.71.117:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "staging-dns": f"http://grader-staging.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "prod-dns": f"http://grader-prod.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "dev-dns": f"http://grader-dev.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "staging-hub": f"https://hubv2-staging.data8x.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}",
