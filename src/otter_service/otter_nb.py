@@ -25,7 +25,7 @@ from otter_service import lti_keys
 from otter_service.grade_assignment import grade_assignment
 from otter_service import create_database
 
-
+PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
 SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
 OTTER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("OTTER_LOG_FILE")
@@ -388,8 +388,7 @@ def start_server():
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
-    app = tornado.web.Application([("/services/gofer_nb", GoferHandler)])
-
+    app = tornado.web.Application([(PREFIX, GoferHandler)])
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
