@@ -1,3 +1,10 @@
+## 0.1.17
+
+#### Enhancements made
+
+- deploys from branches to appropriate namespaces
+- converted to otter-service(removed from gofer-service repo)
+
 ## 0.1.11
 
 #### Enhancements made
