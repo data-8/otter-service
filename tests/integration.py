@@ -1,20 +1,21 @@
 import json
 import requests
 
+JUPYTERHUB_SERVICE_PREFIX = "/services/gofer_nb"
 server_map = {
-    "local": "http://localhost:10101",
-    "staging-lb": "http://34.134.82.125:10101",
-    "dev-lb": "http://34.134.165.169:10101",
-    "prod-lb": "http://34.70.18.176:10101",
-    "stage-dns": "http://grader-staging.data8x.berkeley.edu:10101",
-    "prod-dns": "http://grader-prod.data8x.berkeley.edu:10101",
-    "dev-dns": "http://grader-dev.data8x.berkeley.edu:10101",
-    "staging-hub": "https://hubv2-staging.data8x.berkeley.edu/services/gofer_nb/",
-    "prod-hub": "https://hubv2.data8x.berkeley.edu/services/gofer_nb/"
+    "local": f"http://localhost:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "staging-lb": f"http://34.134.82.125:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "dev-lb": f"http://34.134.165.169:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "prod-lb": f"http://34.70.18.176:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "stage-dns": f"http://grader-staging.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "prod-dns": f"http://grader-prod.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "dev-dns": f"http://grader-dev.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "staging-hub": f"https://hubv2-staging.data8x.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}",
+    "prod-hub": f"https://hubv2.data8x.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}"
 }
 
 
-def submit_test():
+def submit_test(map_item):
     # I use this file to test from the shell
     with open("tests/test_files/lab01.ipynb", 'r', encoding="utf-8") as myfile:
         data = myfile.read()
@@ -22,8 +23,9 @@ def submit_test():
     data = json.loads(data)
     js = {'nb': data}
     for x in range(1):
-        response = requests.post(server_map["dev-dns"], data=json.dumps(js))
+        response = requests.post(server_map[map_item], data=json.dumps(js))
         print(response)
 
 
-submit_test()
+import sys
+submit_test(sys.argv[1])
