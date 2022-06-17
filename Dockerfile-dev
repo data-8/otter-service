@@ -3,7 +3,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ACCESS_TOKEN
 ARG OTTER_SERVICE_VERSION
 
-RUN apt-get update && \
+RUN apt-get clean && \
+    apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y software-properties-common && \
     apt-get update && \

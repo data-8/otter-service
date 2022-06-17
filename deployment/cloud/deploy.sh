@@ -8,6 +8,8 @@ github_key=$(sops -d src/otter_service/secrets/gh_key.yaml)
 github_key=${github_key##github_access_token: }
 
 if [ "$branch_name" == "dev" ]; then
+    python3 -m build
+    python3 -m pip install dist/otter_service-${version}.tar.gz --force
     python3 -m twine upload dist/*$version*
     
     yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
@@ -39,7 +41,9 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     #for testing and more
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
     kubectl apply -f ./deployment/cloud/deployment.yaml
-
+    
+    kubectl set image deployment/otter-pod -n otter-$branch_name otter-srv=gcr.io/data8x-scratch/otter:$version
+    
     yq eval ".spec.loadBalancerIP=\"$LB_IP\"" -i deployment/cloud/deployment-service.yaml
     kubectl apply -f ./deployment/cloud/deployment-service.yaml
     

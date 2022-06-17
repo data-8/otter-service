@@ -1,3 +1,9 @@
+## 0.1.18
+
+#### Enhancements made
+
+- cloud deploy not longer dependent on local build
+
 ## 0.1.17
 
 #### Enhancements made
