@@ -4,6 +4,7 @@ version=`sed -e 's/^"//' -e 's/"$//' <<<"$version"`
 cp -R ../otter-grader ./otter-grader
 python3 -m build
 python3 -m pip install dist/otter_service-${version}.tar.gz --force
+yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
 docker-compose build
 rm -rf ./otter-grader
 docker-compose up
