@@ -8,6 +8,8 @@ github_key=$(sops -d src/otter_service/secrets/gh_key.yaml)
 github_key=${github_key##github_access_token: }
 
 if [ "$branch_name" == "dev" ]; then
+    python3 -m build
+    python3 -m pip install dist/otter_service-${version}.tar.gz --force
     python3 -m twine upload dist/*$version*
     
     yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
