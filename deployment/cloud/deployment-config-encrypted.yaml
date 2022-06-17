@@ -6,6 +6,9 @@ data:
     POST_GRADE: "True"
     VERBOSE_LOGGING: "True"
     EDX_URL: courses.edx.org
+    AUTOGRADER_REPO: "materials-x22-private"
+    AUTOGRADER_MATERIALS_SUBPATH: "materials/x22"
+    AUTOGRADER_MATERIALS_URL: "github.com/data-8/materials-x22-private/archive/main.tar.gz"
     COURSE_CONFIG_PATH: /opt/materials-x22-private/8x-course-config.json
     GCP_PROJECT_ID: data8x-scratch
     VOLUME_PATH: /mnt/data
