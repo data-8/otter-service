@@ -1,7 +1,7 @@
 import json
 import requests
 
-JUPYTERHUB_SERVICE_PREFIX = "/services/gofer_nb"
+JUPYTERHUB_SERVICE_PREFIX = "/services/gofer_nb/"
 server_map = {
     "local": f"http://localhost:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "staging-lb": f"http://35.193.0.244:10101{JUPYTERHUB_SERVICE_PREFIX}",

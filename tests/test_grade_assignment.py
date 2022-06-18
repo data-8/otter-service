@@ -1,8 +1,8 @@
 import pytest
+import otter_service.access_sops_keys as ask
 import otter_service.grade_assignment as ga
 import os
 import shutil
-from otter_service import access_sops_keys
 
 
 @pytest.fixture()
@@ -17,7 +17,7 @@ def configure():
 def test_download_autograder_materials(configure):
     key_test = "tests/test_files/gh_key.yaml"
     sops_path = "sops"
-    git_access_token = access_sops_keys.get_via_sops("github_access_token", sops_path=sops_path, secrets_file=key_test)
+    git_access_token = ask.get_via_sops("github_access_token", sops_path=sops_path, secrets_file=key_test)
     materials_url = f"https://{git_access_token}:@github.com/data-8/materials-x22-private/archive/main.tar.gz"
     ga.download_autograder_materials(materials_url)
     assert os.path.isdir("./materials-x22-private")
