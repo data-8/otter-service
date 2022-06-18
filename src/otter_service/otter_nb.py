@@ -21,7 +21,7 @@ import tornado.ioloop
 import tornado.escape
 import tornado.options
 import tornado.gen
-from otter_service import lti_keys
+from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 from otter_service import create_database
 
@@ -154,8 +154,9 @@ async def post_grade(user_id, grade, course, section, assignment):
           </imsx_POXBody>
         </imsx_POXEnvelopeRequest>
         """
-        consumer_key = lti_keys.get("LTI_CONSUMER_KEY")
-        consumer_secret = lti_keys.get("LTI_CONSUMER_SECRET")
+        secrets_file = os.path.join(os.path.dirname(__file__), "secrets/gke_key.yaml")
+        consumer_key = access_sops_keys.get("LTI_CONSUMER_KEY", secrets_file=secrets_file)
+        consumer_secret = access_sops_keys.get("LTI_CONSUMER_SECRET", secrets_file=secrets_file)
 
         sourced_id = f"{sourced_id}:{user_id}"
         post_data = post_xml.format(grade=float(grade), sourcedid=sourced_id)

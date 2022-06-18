@@ -7,15 +7,15 @@ branch_name=${branch_name:-HEAD}
 github_key=$(sops -d src/otter_service/secrets/gh_key.yaml)
 github_key=${github_key##github_access_token: }
 
-if [ "$branch_name" == "dev" ]; then
-    python3 -m build
-    python3 -m pip install dist/otter_service-${version}.tar.gz --force
-    python3 -m twine upload dist/*$version*
+# if [ "$branch_name" == "dev" ]; then
+#     python3 -m build
+#     python3 -m pip install dist/otter_service-${version}.tar.gz --force
+#     python3 -m twine upload dist/*$version*
     
-    yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
-    # if breaks on Permission denied run: gcloud auth login
-    gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version  --config ./deployment/cloud/cloudbuild.yaml
-fi
+#     yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
+#     # if breaks on Permission denied run: gcloud auth login
+#     gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version  --config ./deployment/cloud/cloudbuild.yaml
+# fi
 
 export KUBECONFIG=./kube-context
 # gcloud container --project "data8x-scratch" clusters create-auto "otter-cluster" --region "us-central1" --release-channel "regular" --network "projects/data8x-scratch/global/networks/default" --subnetwork "projects/data8x-scratch/regions/us-central1/subnetworks/default"
@@ -42,7 +42,7 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
     kubectl apply -f ./deployment/cloud/deployment.yaml
     
-    kubectl set image deployment/otter-pod -n otter-$branch_name otter-srv=gcr.io/data8x-scratch/otter:$version
+    kubectl set image deployment/otter-pod -n otter-$branch_name otter-srv=gcr.io/data8x-scratch/otter-srv:$version
     
     yq eval ".spec.loadBalancerIP=\"$LB_IP\"" -i deployment/cloud/deployment-service.yaml
     kubectl apply -f ./deployment/cloud/deployment-service.yaml
