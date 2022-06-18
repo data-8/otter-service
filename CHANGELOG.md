@@ -1,4 +1,10 @@
-## 0.1.18
+## 0.1.20
+
+#### Enhancements made
+
+- Fixed URI to include backslash
+
+## 0.1.19
 
 #### Enhancements made
 
