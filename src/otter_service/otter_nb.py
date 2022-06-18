@@ -25,7 +25,7 @@ from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 from otter_service import create_database
 
-PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb')
+PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
 SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
 OTTER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("OTTER_LOG_FILE")
