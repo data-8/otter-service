@@ -53,7 +53,7 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
     try:
         solutions_base_path = None
         if save_path is None:
-            save_path = "/opt/"
+            save_path = "/opt"
         if secrets_file is None:
             secrets_file = os.path.join(os.path.dirname(__file__), "secrets/gh_key.yaml")
         git_access_token = access_sops_keys.get("github_access_token", sops_path=sops_path, secrets_file=secrets_file)
