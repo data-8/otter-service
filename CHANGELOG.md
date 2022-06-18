@@ -2,6 +2,14 @@
 
 #### Enhancements made
 
+- Configured the grading to download autotgrader materials each time so
+that the materials can be changed and the system not re-deployed
+- fixed image name in deployment.yaml; mistake in set-image path
+
+## 0.1.18
+
+#### Enhancements made
+
 - cloud deploy not longer dependent on local build
 
 ## 0.1.17

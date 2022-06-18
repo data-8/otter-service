@@ -1,4 +1,4 @@
-import otter_service.lti_keys as lti
+from otter_service import access_sops_keys as ask
 import pytest
 import os
 
@@ -12,23 +12,23 @@ def setup():
 
 
 def test_get_sops():
-    secrets_path = os.path.join(os.path.dirname("."), "tests/test_files/test_key.yaml")
+    secrets_path = os.path.join(os.path.dirname(__file__), "test_files/test_key.yaml")
     sops_path = "sops"
-    key = lti.get_via_sops("LTI_CONSUMER_KEY", sops_path=sops_path, secrets_path=secrets_path)
+    key = ask.get_via_sops("LTI_CONSUMER_KEY", sops_path=sops_path, secrets_file=secrets_path)
     assert "test_lti_key" in key
 
 
 def test_get_via_env(setup):
-    key = lti.get_via_env("LTI_CONSUMER_KEY")
+    key = ask.get_via_env("LTI_CONSUMER_KEY")
     assert "TEST_ENV_KEY" in key
 
 
 def test_get(setup):
-    key = lti.get("LTI_CONSUMER_KEY")
+    key = ask.get("LTI_CONSUMER_KEY")
     assert "TEST_ENV_KEY" in key
     del os.environ['LTI_CONSUMER_KEY']
     try:
-        key = lti.get("LTI_CONSUMER_KEY")  # this should raise Exception
+        key = ask.get("LTI_CONSUMER_KEY")  # this should raise Exception
         assert False
     except Exception:
         assert True

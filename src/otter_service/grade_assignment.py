@@ -1,8 +1,41 @@
 import asyncio
 import async_timeout
+import requests
+import tarfile
+import os
+from otter_service import access_sops_keys
+import shutil
 
 
-async def grade_assignment(submission, sec='3', assignment='lab01', solutions_path=None):
+def download_autograder_materials(url, save_path=None):
+    """
+    This function downloads the appropriate archive of autograder materials be used for testing
+
+    :param url: the url to the archive of materials
+    :param save_path: Where to save the archive -- for testing it is "." for normal it will /tmp
+    """
+    download_path = "/tmp/materials.tar.gz"
+    if save_path is None:
+        save_path = "."
+        download_path = "./materials.tar.gz"
+    r = requests.get(url, stream=True)
+    if r.status_code == 200:
+        with open(download_path, 'wb') as f:
+            f.write(r.raw.read())
+    file = tarfile.open(download_path)
+    file.extractall(save_path)
+    file.close()
+    url_parts = url.split("/")
+    branch = url_parts[-1].split(".")[0]
+    file_name = os.environ["AUTOGRADER_REPO"]
+    extracted_path = f"{save_path}/{file_name}-{branch}"
+    storage_path = f"{save_path}/{file_name}"
+    os.rename(extracted_path, storage_path)
+    os.remove(download_path)
+    return storage_path
+
+
+async def grade_assignment(submission, sec='3', assignment='lab01', solutions_path=None, sops_path=None, secrets_file=None, save_path=None):
     """
     This function spins up a docker instance using otter, grades the submission
     and returns the grade
@@ -11,16 +44,33 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
     :param sec: the course section; it is used to determine the path to the solution file
     :param assignment: the name of the assignment; it is used to determine the path to the solution file
     :param solutions_path: [OPTIONAL] used to execute pytests
+    :param sops_path: [OPTIONAL] used to execute pytests
+    :param secrets_file: [OPTIONAL] used to execute pytests
+    :param save_path: [OPTIONAL] used to execute pytests
     :return: grade
     :rtype: float
     """
     try:
+        solutions_base_path = None
+        if save_path is None:
+            save_path = "/opt/"
+        if secrets_file is None:
+            secrets_file = os.path.join(os.path.dirname(__file__), "secrets/gh_key.yaml")
+        git_access_token = access_sops_keys.get("github_access_token", sops_path=sops_path, secrets_file=secrets_file)
+        materials_url = os.environ["AUTOGRADER_MATERIALS_URL"]
+        materials_url = f"https://{git_access_token}:@{materials_url}"
+        autograder_materials_subpath = os.environ["AUTOGRADER_MATERIALS_SUBPATH"]
+        solutions_base_path = download_autograder_materials(materials_url, save_path=save_path)
         assign_type = "lab"
         if "hw" in assignment:
             assign_type = "hw"
         if solutions_path is None:
-            solutions_path = '/opt/materials-x22-private/materials/x22/{assign_type}/{sec}/{assignment}/autograder.zip'
-        zip_path = solutions_path.format(assign_type=assign_type, sec=sec, assignment=assignment)
+            solutions_path = '{solutions_base_path}/{autograder_materials_subpath}/{assign_type}/{sec}/{assignment}/autograder.zip'
+        zip_path = solutions_path.format(solutions_base_path=solutions_base_path,
+                                         autograder_materials_subpath=autograder_materials_subpath,
+                                         assign_type=assign_type,
+                                         sec=sec,
+                                         assignment=assignment)
         # command = [
         #     'otter', 'grade',
         #     '-a',
@@ -66,3 +116,6 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
         raise Exception(f'Grading timed out for {submission}')
     except Exception as e:
         raise e
+    finally:
+        if solutions_base_path is not None:
+            shutil.rmtree(solutions_base_path)
