@@ -1,4 +1,4 @@
-from otter_service import access_sops_keys as ask
+import otter_service.access_sops_keys as ask
 import pytest
 import os
 
