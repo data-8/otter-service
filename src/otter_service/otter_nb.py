@@ -11,7 +11,7 @@ from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
-from jupyterhub.services.auth import HubAuthenticated
+from jupyterhub.services.auth import HubOAuthenticated
 from lxml import etree
 import aiohttp
 import async_timeout
@@ -212,7 +212,7 @@ async def post_grade(user_id, grade, course, section, assignment):
         raise Exception(f"Problem Posting Grade to LTI:{ex}") from ex
 
 
-class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
+class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
     """
     This class handles the HTTP requests for this tornado instance
     """
