@@ -6,6 +6,7 @@ import logging
 import traceback
 import datetime
 import os
+import uuid
 from hashlib import sha1
 from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
@@ -390,7 +391,8 @@ def start_server():
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
-    app = tornado.web.Application([(PREFIX, GoferHandler)])
+    app = tornado.web.Application([(PREFIX, GoferHandler)],
+                                  cookie_secret=str(uuid.uuid4()))
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
