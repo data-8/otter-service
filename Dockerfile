@@ -28,8 +28,6 @@ ENV DOCKER_API_VERSION 1.27
 RUN curl -fsSL "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" \
   | tar -xzC /usr/local/bin --strip=1 docker/docker
 
-ADD https://${GIT_ACCESS_TOKEN}:@github.com/data-8/materials-x22-private/archive/main.tar.gz /opt/
-RUN tar -xzf /opt/main.tar.gz -C /opt && rm /opt/main.tar.gz && mv  /opt/materials-x22-private-main /opt/materials-x22-private
 
 WORKDIR /opt
 

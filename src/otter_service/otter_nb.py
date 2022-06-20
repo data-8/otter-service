@@ -237,6 +237,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
         try:
             # Accept notebook submissions, saves, then grades them
             user = self.get_current_user()
+            log_info_csv("PRINT USER OBJ", course, section, assignment, str(user))
             if user is None:
                 user = {"name": os.getenv("TEST_USER")}
                 using_test_user = True

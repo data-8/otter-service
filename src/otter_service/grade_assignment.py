@@ -30,7 +30,7 @@ def download_autograder_materials(url, save_path=None):
     file_name = os.environ["AUTOGRADER_REPO"]
     extracted_path = f"{save_path}/{file_name}-{branch}"
     storage_path = f"{save_path}/{file_name}"
-    if os.path.isfile(storage_path):
+    if os.path.isdir(storage_path):
         shutil.rmtree(storage_path)
     os.rename(extracted_path, storage_path)
     os.remove(download_path)
