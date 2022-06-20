@@ -1,3 +1,10 @@
+## 0.1.22
+
+#### Enhancements made
+
+- Changed the error handling on the GradePostException
+- Changed deletion of materials directory to just before downloading
+
 ## 0.1.21
 
 #### Enhancements made

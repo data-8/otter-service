@@ -288,7 +288,7 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
                 if assignment is None:
                     assignment = "Assignment: problem getting assignment - not in notebook?"
 
-            log_error_csv(timestamp, user['name'], section, assignment, str(grade_submission_exception.response))
+            log_error_csv(timestamp, user['name'], section, assignment, str(grade_submission_exception))
         except Exception as ex:  # pylint: disable=broad-except
             log_error_csv(timestamp, user['name'], section, assignment, str(ex))
 
