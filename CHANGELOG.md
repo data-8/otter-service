@@ -1,3 +1,9 @@
+## 0.1.21
+
+#### Enhancements made
+
+- Save_Path are trailing forward slash
+
 ## 0.1.20
 
 #### Enhancements made
