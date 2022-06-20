@@ -26,7 +26,7 @@ def setup_db():
 
 
 async def test_http_client(http_server_client):
-    resp = await http_server_client.fetch('/services/gofer_nb')
+    resp = await http_server_client.fetch('/services/gofer_nb/')
     assert resp.code == 200
     http_server_client.close()
     os.remove(gn.ERROR_FILE)
