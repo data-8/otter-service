@@ -6,9 +6,9 @@ data:
     POST_GRADE: "True"
     VERBOSE_LOGGING: "True"
     EDX_URL: courses.edx.org
-    AUTOGRADER_REPO: "materials-x22-private"
-    AUTOGRADER_MATERIALS_SUBPATH: "materials/x22"
-    AUTOGRADER_MATERIALS_URL: "github.com/data-8/materials-x22-private/archive/main.tar.gz"
+    AUTOGRADER_REPO: materials-x22-private
+    AUTOGRADER_MATERIALS_SUBPATH: materials/x22
+    AUTOGRADER_MATERIALS_URL: github.com/data-8/materials-x22-private/archive/main.tar.gz
     COURSE_CONFIG_PATH: /opt/materials-x22-private/8x-course-config.json
     GCP_PROJECT_ID: data8x-scratch
     VOLUME_PATH: /mnt/data
@@ -20,19 +20,21 @@ data:
     DB_PATH: gradebook.db
     JUPYTERHUB_API_URL: https://hubv2.data8x.berkeley.edu/hub/api
     JUPYTERHUB_BASE_URL: https://hubv2.data8x.berkeley.edu
-    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:gO5CBWxYZAkkEfA0dMA5fqj4xv2hGd/CgCHcXj4We/H/p+7XttNyUveLaXtxkzFUmdSwCZ8qRPcfqaX3gAfmiA==,iv:x8O0M4hINvjDQM64RFBzG/XZjkOAfCTd4AF+Jsvovow=,tag:v9aKgTS5u9Jr1YAYRuVhhw==,type:str]
+    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:76XGJrhL7fqxdrvcWen7FICF9YbKYvddvtfj8sZGJ0E=,iv:RTXhQW/cVMcKWzovBhyhoii3XTJ0SdImv7XjJ2DHGrY=,tag:oNPvMb8j5xCaRxi7xrtniA==,type:str]
+    JUPYTERHUB_SERVICE_PREFIX: /services/gofer_nb/
+    JUPYTERHUB_SERVICE_NAME: gofer_nb
     TEST_USER: 594aed203b01b16a7a025c2f3e037933
 sops:
     kms: []
     gcp_kms:
         - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/otter-service
-          created_at: "2022-06-10T16:39:32Z"
-          enc: CiQA+mtdj524tdeSJbBIQhRBU/nNGALmMfGG5s4bk+DmTqY8wvoSSQCnWbpGwIb2rEzIKAWxL40kOPlDzK2rbktYUoQBF7z9EuKLY6zUYQR5LBJhYbVjuJL+IHxmA3oaPQln46qj3s0QcBQUvsJoLH0=
+          created_at: "2022-06-21T01:10:15Z"
+          enc: CiQA+mtdj/SpRRvA5GblNqbZx8NqHeBoTX1R63+nSDmtRQbBfi8SSQCnWbpGHsgoSnmdn1lBDZncnBZb/jMdiU1EytappbcS6py4Q8hHu290Kfl1hTUcQdjw/ZDTNQQxNUsV+QTSW678ZFK+z/XVCUI=
     azure_kv: []
     hc_vault: []
     age: []
-    lastmodified: "2022-06-10T16:39:32Z"
-    mac: ENC[AES256_GCM,data:V8W+EVznwQDzGS+Y+Rg1ify3F+dfepRCVxmVDVcdpO+9vTZ7E5NF4XUqn3CPLEsWfoAu5sPmZniHS9RSBpiDIBpK1xLlqoZSzj49xffa4FMlccLI/azWGV/c7mjOnb0YVS32SEpSizZ3/NWcyRJVGDEFJmSYhuODzIakIwPDKhA=,iv:IxPHG6aRChML0NAN426wUZB9N5E3CABnGnVRwyx1k54=,tag:xBBtZqkL9rZ/10uZh+gPcw==,type:str]
+    lastmodified: "2022-06-21T01:10:16Z"
+    mac: ENC[AES256_GCM,data:GAFj1CsJUMPRzQx+ebRoHz4mwQM1a4/cxECZbng3aZeVp92Wn1nClN+w+fJ7OORQLvH2dXSNZKrp+feYCbq353cJ9m+XRbDZjL4QFTFNWSBtp23Epv1PweYPNsWxKlgVl1KXJSyWZYWeDLlX+zyuX8GfZ1ArIk9yClxEbi0Bwv8=,iv:GBof7XoKNNhYlebPyFGTsjEUhbkwJsy8QzCzxJwktTg=,tag:o01hdTlsQPL5ODLczpvGNw==,type:str]
     pgp: []
     encrypted_suffix: _TOKEN
     version: 3.7.1
