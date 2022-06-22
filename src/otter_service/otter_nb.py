@@ -6,13 +6,12 @@ import logging
 import traceback
 import datetime
 import os
-import uuid
 from hashlib import sha1
 from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
-from jupyterhub.services.auth import HubOAuthenticated
+from jupyterhub.services.auth import HubAuthenticated
 from lxml import etree
 import aiohttp
 import async_timeout
@@ -213,7 +212,7 @@ async def post_grade(user_id, grade, course, section, assignment):
         raise Exception(f"Problem Posting Grade to LTI:{ex}") from ex
 
 
-class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
+class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
     """
     This class handles the HTTP requests for this tornado instance
     """
@@ -391,8 +390,9 @@ def start_server():
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
-    app = tornado.web.Application([(PREFIX, GoferHandler)],
-                                  cookie_secret=str(uuid.uuid4()))
+
+    app = tornado.web.Application([(PREFIX, GoferHandler)])
+    #                               cookie_secret=str(uuid.uuid4()))
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
