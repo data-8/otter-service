@@ -20,7 +20,7 @@ data:
     DB_PATH: gradebook.db
     JUPYTERHUB_API_URL: https://hubv2.data8x.berkeley.edu/hub/api
     JUPYTERHUB_BASE_URL: https://hubv2.data8x.berkeley.edu
-    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:BoAIe7qkLBu3LERrWx1dyz2huhRH9pP1I1vy9Esewus=,iv:mLfZstP7Dn/8+KQw8WO6g+rjbBftDL6AJkGWMNqE9IQ=,tag:b8p2LEzumhFcTsoOt7vWdA==,type:str]
+    JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:hqeouXvrJQOWHHILtiRq/TnlnhNx57FFedb9iiWdXYaED1UqM+hBfwxheReOUf0KOFTKPo+FYj3pDxC7ZD2gnA==,iv:jkgjt7Qo4JgW6rFeaXS7U8QZ58XAl3Cb7W1/ZHgZ2KY=,tag:3KzIAeVJLrwtyfd7XXJNLg==,type:str]
     JUPYTERHUB_SERVICE_PREFIX: /services/gofer_nb/
     JUPYTERHUB_SERVICE_NAME: gofer_nb
     TEST_USER: 594aed203b01b16a7a025c2f3e037933
@@ -28,13 +28,13 @@ sops:
     kms: []
     gcp_kms:
         - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/otter-service
-          created_at: "2022-06-21T16:24:52Z"
-          enc: CiQA+mtdjwE8/LAgbn6nmkZJsgJTr13YRJMbnRNVHJmqgjh3EHcSSQCnWbpG4NNuIOLuZYyAMsL0kR1nvdAGJQuMYvQWjCoAOERipwcqRgnoNpQsk0tb805dE/AVhe4TMTc0RiAvO4zqMxpkeJDY6s0=
+          created_at: "2022-06-23T21:31:18Z"
+          enc: CiQA+mtdjwNLsO0808F05GlnlY+j2VnIMFLWtM8XuLAErMCIHxUSSQCnWbpGgTXFY2k4UafRluSPnGQH3rMYFyvLweqCKjOCpGSHw+X0DD9bVOmQRPeOTV7fkFGJDGJNK4eVZwh569ZQhbJpqBD5Ohg=
     azure_kv: []
     hc_vault: []
     age: []
-    lastmodified: "2022-06-21T16:24:53Z"
-    mac: ENC[AES256_GCM,data:jQzuZpth0Oe53aFq2eB44LfO3PgPWPkt+M5nGJOh2cNGKb6V6WNqAgHmkLaIvI1k0MBXA1mhG0+kgTxKmdlqaCmr1nOjyLX8X6HDL5Af0r/4L65KZs9Rpn0vUq214AAmh/4Yp7IFLC+nnoeUygY70sJyOWRjdXFfqDCFZ6TMgnw=,iv:OGZj4BfnpqCU2VebwaDGjFYCfG+MHoGrceV1pW9EflQ=,tag:ZcEfcu+avHrnkgjjJGnDkQ==,type:str]
+    lastmodified: "2022-06-23T21:31:19Z"
+    mac: ENC[AES256_GCM,data:N29uNILjY6sl9MNY3yMNZrzLvzplVlCJssgsLWMnZ2+iIZPP8WpkBSxek7CtIBQPpR1JNQ1gmInvJAVzqFZRS+THp88hZ+n+3X/lCjhTYE/My10kSSMHXQ+4eQyvDoL/zGRcsz658WukT8Dh2LXLdbV75W3Q5pFK2P7DzIMwITI=,iv:hgRjS2y5kn1ZwvTTglOEm2cvj115gnc6krnnHL7gzRo=,tag:VnYIuQZRdbyVdDwz8gGJWg==,type:str]
     pgp: []
     encrypted_suffix: _TOKEN
     version: 3.7.1
