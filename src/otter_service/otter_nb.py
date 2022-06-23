@@ -21,6 +21,7 @@ import tornado.ioloop
 import tornado.escape
 import tornado.options
 import tornado.gen
+from tornado.web import authenticated
 from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 from otter_service import create_database
@@ -216,16 +217,18 @@ class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
     """
     This class handles the HTTP requests for this tornado instance
     """
-    def data_received(self, chunk):
+    async def data_received(self, chunk):
         """
         abstract methods empty
         :param chunk
         """
         self.write("This is a post only page. You probably shouldn't be here!")
 
-    def get(self):
+    async def get(self):
         self.write("This is a post only page. You probably shouldn't be here!")
+        self.finish()
 
+    @authenticated
     async def post(self):
         notebook = None
         section = None
