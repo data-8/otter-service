@@ -394,8 +394,8 @@ def start_server():
     """
     tornado.options.parse_command_line()
 
-    app = tornado.web.Application([(PREFIX, GoferHandler)])
-    #                               cookie_secret=str(uuid.uuid4()))
+    app = tornado.web.Application([(PREFIX, GoferHandler)],
+                                  cookie_secret=os.urandom(32))
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
