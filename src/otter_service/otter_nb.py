@@ -11,7 +11,10 @@ from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
-from jupyterhub.services.auth import HubAuthenticated
+
+from jupyterhub.services.auth import HubOAuthCallbackHandler
+from jupyterhub.services.auth import HubOAuthenticated
+from jupyterhub.utils import url_path_join
 from lxml import etree
 import aiohttp
 import async_timeout
@@ -394,8 +397,17 @@ def start_server():
     """
     tornado.options.parse_command_line()
 
-    app = tornado.web.Application([(PREFIX, GoferHandler)],
-                                  cookie_secret=os.urandom(32))
+    app = tornado.web.Application(
+        [
+            (PREFIX, GoferHandler),
+            (
+                url_path_join(
+                    os.environ['JUPYTERHUB_SERVICE_PREFIX'], 'oauth_callback'
+                ),
+                HubOAuthCallbackHandler,
+            )
+        ],
+        cookie_secret=os.urandom(32))
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
