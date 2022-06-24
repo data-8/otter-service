@@ -216,23 +216,23 @@ async def post_grade(user_id, grade, course, section, assignment):
         raise Exception(f"Problem Posting Grade to LTI:{ex}") from ex
 
 
-class GoferHandler(HubAuthenticated, tornado.web.RequestHandler):
+class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
     """
     This class handles the HTTP requests for this tornado instance
     """
-    async def data_received(self, chunk):
+    def data_received(self, chunk):
         """
         abstract methods empty
         :param chunk
         """
         self.write("This is a post only page. You probably shouldn't be here!")
 
-    async def get(self):
+    def get(self):
         self.write("This is a post only page. You probably shouldn't be here!")
         self.finish()
 
     @authenticated
-    async def post(self):
+    def post(self):
         notebook = None
         section = None
         assignment = None
