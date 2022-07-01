@@ -11,9 +11,7 @@ from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
-
-from jupyterhub.services.auth import HubOAuthCallbackHandler
-from jupyterhub.services.auth import HubOAuthenticated
+from jupyterhub.services.auth import HubOAuthenticated, HubOAuthCallbackHandler
 from jupyterhub.utils import url_path_join
 from lxml import etree
 import aiohttp
@@ -241,10 +239,12 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         using_test_user = False
         try:
             # Accept notebook submissions, saves, then grades them
+            
             user = self.get_current_user()
             log_info_csv("PRINT USER OBJ", course, section, assignment, str(user))
             if user is None:
-                user = {"name": os.getenv("TEST_USER")}
+                url_referer = self.request.headers.get("Referer")
+                user = {"name": url_referer.split("/")[4]}
                 using_test_user = True
             req_data = tornado.escape.json_decode(self.request.body)
             # in the future, assignment should be metadata in notebook
@@ -265,7 +265,7 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             if notebook is None or section is None or assignment is None:
                 raise GradeSubmissionException("Notebook does not have required metadata or maybe no notebook in post")
 
-            log_info_csv(user["name"], course, section, assignment, f"User logged in at {timestamp} -  TEST_USER: {using_test_user}")
+            log_info_csv(user["name"], course, section, assignment, f"User logged in at {timestamp} -  Using Referrer: {using_test_user}")
             # save notebook submission with user id and time stamp
             submission_file = f"{VOLUME_PATH}/submissions/{user['name']}_{section}_{assignment}_{timestamp}.ipynb"
             with open(submission_file, 'w', encoding="utf8") as outfile:
@@ -396,14 +396,17 @@ def start_server():
     """
     tornado.options.parse_command_line()
 
+    # app = tornado.web.Application(
+    #     [(PREFIX, GoferHandler)]
+    # )
     app = tornado.web.Application(
         [
             (PREFIX, GoferHandler),
             (
                 url_path_join(
-                    os.environ['JUPYTERHUB_SERVICE_PREFIX'], 'oauth_callback'
+                    os.environ['JUPYTERHUB_BASE_URL'], 'hub', 'oauth_callback'
                 ),
-                HubOAuthCallbackHandler,
+                HubOAuthCallbackHandler
             )
         ],
         cookie_secret=os.urandom(32))
