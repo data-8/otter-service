@@ -37,7 +37,7 @@ python-editor==1.0.3
 python-oauth2==1.1.0
 six==1.12.0
 SQLAlchemy==1.2.16
-tornado==5.1.1
+tornado
 traitlets==5.1.0
 typing-extensions==3.10.0.2
 urllib3==1.24.1
