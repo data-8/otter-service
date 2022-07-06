@@ -229,6 +229,7 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         self.write("This is a post only page. You probably shouldn't be here!")
         self.finish()
 
+    @authenticated
     def post(self):
         notebook = None
         section = None
@@ -404,7 +405,7 @@ def start_server():
             (PREFIX, GoferHandler),
             (
                 url_path_join(
-                    os.environ['JUPYTERHUB_BASE_URL'], 'hub', 'oauth_callback'
+                    os.environ['JUPYTERHUB_SERVICE_PREFIX'], 'oauth_callback'
                 ),
                 HubOAuthCallbackHandler
             )
