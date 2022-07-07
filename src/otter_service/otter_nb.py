@@ -416,11 +416,13 @@ def start_server():
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
     access_logger = logging.getLogger("tornado.access")
+    access_logger.setLevel(logging.DEBUG)
     access_file_handler = logging.FileHandler(ACCESS_LOG_FILE)
     access_file_handler.setFormatter(formatter)
     access_logger.addHandler(access_file_handler)
