@@ -29,6 +29,7 @@ from otter_service import create_database
 
 PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
+ACCESS_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("ACCESS_LOG_FILE")
 SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
 OTTER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("OTTER_LOG_FILE")
 ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
@@ -407,16 +408,23 @@ def start_server():
                 url_path_join(
                     os.environ['JUPYTERHUB_SERVICE_PREFIX'], 'oauth_callback'
                 ),
-                HubOAuthCallbackHandler
+                HubOAuthCallbackHandler,
             )
         ],
-        cookie_secret=os.urandom(32))
+        cookie_secret=os.urandom(32),
+    )
 
     logger = logging.getLogger('tornado.application')
     file_handler = logging.FileHandler(SERVER_LOG_FILE)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+
+    access_logger = logging.getLogger("tornado.access")
+    access_file_handler = logging.FileHandler(ACCESS_LOG_FILE)
+    access_file_handler.setFormatter(formatter)
+    access_logger.addHandler(access_file_handler)
+
     app.listen(10101)
 
     return app
