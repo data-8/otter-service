@@ -14,13 +14,15 @@ data:
     VOLUME_PATH: /mnt/data
     OTTER_LOG_FILE: otter-service-logs.txt
     SERVER_LOG_FILE: tornado-server-log.txt
+    ACCESS_LOG_FILE: tornado-access-log.txt
     ERROR_FILE: otter-service-errors.csv
     ERROR_PATH: ottererrors
     SUBMISSIONS_PATH: submissions
     DB_PATH: gradebook.db
-    JUPYTERHUB_API_URL: https://hubv2.data8x.berkeley.edu/hub/api
-    JUPYTERHUB_BASE_URL: https://hubv2.data8x.berkeley.edu
+    JUPYTERHUB_API_URL: set-via-script
+    JUPYTERHUB_BASE_URL: set-via-script
     JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:hqeouXvrJQOWHHILtiRq/TnlnhNx57FFedb9iiWdXYaED1UqM+hBfwxheReOUf0KOFTKPo+FYj3pDxC7ZD2gnA==,iv:jkgjt7Qo4JgW6rFeaXS7U8QZ58XAl3Cb7W1/ZHgZ2KY=,tag:3KzIAeVJLrwtyfd7XXJNLg==,type:str]
+    JUPYTERHUB_CLIENT_ID: service-gofer_nb
     JUPYTERHUB_SERVICE_PREFIX: /services/gofer_nb/
     JUPYTERHUB_SERVICE_NAME: gofer_nb
     TEST_USER: 594aed203b01b16a7a025c2f3e037933
