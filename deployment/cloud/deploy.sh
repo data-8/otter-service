@@ -64,5 +64,6 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     
     git checkout -- deployment/cloud/deployment-service.yaml
     git checkout -- deployment/cloud/deployment-persistent-volume.yaml
+    git checkout -- deployment/cloud/deployment-config-encrypted.yaml
 fi
 rm -f ./kube-context
