@@ -1,16 +1,16 @@
 import base64
 import json
 import time
-import sqlite3
 import logging
 import traceback
-import datetime
+from datetime import datetime
 import os
 from hashlib import sha1
 from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
+from pytz import timezone
 from jupyterhub.services.auth import HubOAuthenticated, HubOAuthCallbackHandler
 from jupyterhub.utils import url_path_join
 from lxml import etree
@@ -26,6 +26,9 @@ from tornado.web import authenticated
 from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 from otter_service import create_database
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
 PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb/')
 VOLUME_PATH = os.getenv("VOLUME_PATH")
@@ -38,26 +41,34 @@ SUBMISSIONS_PATH = f"{VOLUME_PATH}/" + os.getenv("SUBMISSIONS_PATH")
 DB_PATH = f"{VOLUME_PATH}/" + os.getenv("DB_PATH")
 
 
-def write_grade(grade_info, db_filename):
+def write_grade(grade_info):
     """
     write the grade to the database
 
     :param grade_info: the four values in a tuple(userid, grade, section, lab, timestamp)
-    :param db_filename: the filename(path) the sqlite3 db
+    :return Google FireStore document id
     """
-    conn = None
-    sql_cmd = """INSERT INTO grades(userid, grade, section, lab, timestamp)
-                 VALUES(?,?,?,?,?)"""
+    # Use the application default credentials
+    cred = credentials.ApplicationDefault()
+    firebase_admin.initialize_app(cred, {
+        'projectId': os.environ.get("GCP_PROJECT_ID"),
+    })
+
+    db = firestore.client()
+    date_format = "%Y-%m-%d %H:%M:%S %Z"
+    date = datetime.now(tz=pytz.utc)
+    date = date.astimezone(timezone('US/Pacific'))
+    data = {
+        'user': grade_info["userid"],
+        'grade': grade_info["grade"],
+        'section': grade_info["section"],
+        'lab': grade_info["lab"],
+        'date': date.strftime(date_format)
+    }
     try:
-        conn = sqlite3.connect(db_filename)
-        # context manager here takes care of conn.commit()
-        with conn:
-            conn.execute(sql_cmd, grade_info)
+        return db.collection(os.environ.get("ENVIRONMENT")).add(data)
     except Error as err:
-        raise Exception(f"Error inserting into database for the following record: {grade_info}") from err
-    finally:
-        if conn is not None:
-            conn.close()
+        raise Exception(f"Error inserting into Google FireStore for the following record: {grade_info}") from err
 
 
 class GradePostException(Exception):

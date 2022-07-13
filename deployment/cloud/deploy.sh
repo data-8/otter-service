@@ -43,7 +43,7 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     kubectl apply -f ./deployment/cloud/deployment-persistent-volume.yaml 
     kubectl apply -f ./deployment/cloud/deployment-persistent-volume-claim.yaml
     
-
+    yq eval ".data.ENVIRONMENT=\"$NAMESPACE\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     yq eval ".data.JUPYTERHUB_BASE_URL=\"$JUPYTERHUB_BASE_URL\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     yq eval ".data.JUPYTERHUB_API_URL=\"$JUPYTERHUB_API_URL\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     #we ignore the checksum so that clear text values can be changes for deployments -- like POST_GRADE can can be made false

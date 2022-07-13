@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
     name: otter-env
 data:
+    ENVIRONMENT: set-by-script
     POST_GRADE: "True"
     VERBOSE_LOGGING: "True"
     EDX_URL: courses.edx.org
