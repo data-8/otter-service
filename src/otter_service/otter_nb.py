@@ -350,7 +350,7 @@ def get_timestamp():
     """
     returns the time stamp in PST Time
     """
-    utc_now = pytz.utc.localize(datetime.datetime.utcnow())
+    utc_now = pytz.utc.localize(datetime.utcnow())
     pst_now = utc_now.astimezone(pytz.timezone("America/Los_Angeles"))
     return pst_now.strftime("%Y-%m-%d-%H:%M:%S.%f")[:-3]
 
