@@ -474,13 +474,8 @@ def sig_handler(server, sig, frame):
     MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
 
     def stop_loop(deadline):
-        now = time.time()
-        if now < deadline and (io_loop._callbacks or io_loop._timeouts):
-            logging.info('Waiting for next tick')
-            io_loop.add_timeout(now + 1, stop_loop, deadline)
-        else:
-            io_loop.stop()
-            logging.info('Shutdown finally')
+        io_loop.stop()
+        logging.info('Shutdown finally')
 
     def shutdown():
         logging.info('Stopping http server')
