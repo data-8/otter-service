@@ -334,7 +334,7 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             # Write the grade to a sqlite database
             grade_info = (name, grade, section, assignment, timestamp)
             db_path = f"{VOLUME_PATH}/gradebook.db"
-            write_grade(grade_info, db_path)
+            write_grade(grade_info)
             log_info_csv(name, course, section, assignment, f"Grade Written to database: {grade}")
 
             if os.getenv("POST_GRADE").lower() in ("true", '1', 't'):

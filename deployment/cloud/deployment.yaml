@@ -5,7 +5,7 @@ metadata:
   labels:
     app: otter-srv
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: otter-srv
