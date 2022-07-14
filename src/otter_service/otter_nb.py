@@ -64,7 +64,7 @@ def write_grade(grade_info):
         'user': grade_info["userid"],
         'grade': grade_info["grade"],
         'section': grade_info["section"],
-        'lab': grade_info["lab"],
+        'lab': grade_info["assignment"],
         'date': date.strftime(date_format)
     }
     try:
@@ -332,7 +332,12 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             grade = await grade_assignment(file_path, section, assignment)
             log_info_csv(name, course, section, assignment, f"Grade: {grade}")
             # Write the grade to a sqlite database
-            grade_info = (name, grade, section, assignment, timestamp)
+            grade_info = {
+                "userid": name,
+                "grade": grade,
+                "section": section,
+                "assignment": assignment
+            }
             db_path = f"{VOLUME_PATH}/gradebook.db"
             write_grade(grade_info)
             log_info_csv(name, course, section, assignment, f"Grade Written to database: {grade}")

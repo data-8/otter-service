@@ -27,7 +27,7 @@ async def test_http_client(http_server_client):
 
 
 def test_write_grade():
-    grade_info = {"userid": "WRITE_TEST", "grade": 88.0, "section": "1", "lab": "lab99"}
+    grade_info = {"userid": "WRITE_TEST", "grade": 88.0, "section": "1", "assignment": "lab99"}
     doc = gn.write_grade(grade_info)[1]
     db = firestore.client()
     doc_ref = db.collection(os.environ.get("ENVIRONMENT")).document(f'{doc.id}')
