@@ -12,13 +12,6 @@ data:
     AUTOGRADER_MATERIALS_URL: github.com/data-8/materials-x22-private/archive/main.tar.gz
     COURSE_CONFIG_PATH: /opt/materials-x22-private/8x-course-config.json
     GCP_PROJECT_ID: data8x-scratch
-    VOLUME_PATH: /mnt/data
-    OTTER_LOG_FILE: otter-service-logs.txt
-    SERVER_LOG_FILE: tornado-server-log.txt
-    ACCESS_LOG_FILE: tornado-access-log.txt
-    ERROR_FILE: otter-service-errors.csv
-    ERROR_PATH: ottererrors
-    SUBMISSIONS_PATH: submissions
     JUPYTERHUB_API_URL: set-via-script
     JUPYTERHUB_BASE_URL: set-via-script
     JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:hqeouXvrJQOWHHILtiRq/TnlnhNx57FFedb9iiWdXYaED1UqM+hBfwxheReOUf0KOFTKPo+FYj3pDxC7ZD2gnA==,iv:jkgjt7Qo4JgW6rFeaXS7U8QZ58XAl3Cb7W1/ZHgZ2KY=,tag:3KzIAeVJLrwtyfd7XXJNLg==,type:str]

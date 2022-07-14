@@ -7,10 +7,6 @@ from firebase_admin import firestore
 
 @pytest.fixture
 def app():
-    os.environ["VOLUME_PATH"] = "/tmp/otter"
-    error_file = os.environ["SERVER_LOG_FILE"]
-    os.makedirs(os.environ["VOLUME_PATH"], exist_ok=True)
-    gn.ERROR_FILE = os.environ["VOLUME_PATH"] + f"/{error_file}"
     return gn.start_server()
 
 
@@ -19,10 +15,6 @@ async def test_http_client(http_server_client):
     resp = await http_server_client.fetch('/services/gofer_nb/')
     assert resp.code == 302
     http_server_client.close()
-    os.remove(gn.ERROR_FILE)
-    shutil.rmtree(os.environ["VOLUME_PATH"])
-    os.makedirs(os.environ["VOLUME_PATH"])
-    del os.environ["VOLUME_PATH"]
 
 
 def test_write_grade():
@@ -38,7 +30,7 @@ def test_write_grade():
     assert 88.0 == doc_dict["grade"]
     assert "lab99" == doc_dict["assignment"]
 
-    db.collection(os.environ.get("ENVIRONMENT")).document(f'{doc.id}').delete()
+    db.collection(f'{os.environ.get("ENVIRONMENT")}-grades').document(f'{doc.id}').delete()
 
 
 def test_create_post_url():
