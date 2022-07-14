@@ -26,17 +26,17 @@ async def test_http_client(http_server_client):
 
 
 def test_write_grade():
-    grade_info = {"userid": "WRITE_TEST", "grade": 88.0, "section": "1", "assignment": "lab99"}
+    grade_info = {"userid": "WRITE_TEST", "course":"8x-test", "grade": 88.0, "section": "1", "assignment": "lab99"}
     doc = gn.write_grade(grade_info)[1]
     db = firestore.client()
-    doc_ref = db.collection(os.environ.get("ENVIRONMENT")).document(f'{doc.id}')
+    doc_ref = db.collection(f'{os.environ.get("ENVIRONMENT")}-grades').document(f'{doc.id}')
     doc_obj = doc_ref.get()
     doc_dict = doc_obj.to_dict()
 
     assert "WRITE_TEST" == doc_dict["user"]
     assert "1" == doc_dict["section"]
     assert 88.0 == doc_dict["grade"]
-    assert "lab99" == doc_dict["lab"]
+    assert "lab99" == doc_dict["assignment"]
 
     db.collection(os.environ.get("ENVIRONMENT")).document(f'{doc.id}').delete()
 
