@@ -239,12 +239,12 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         """
         self.write("This is a post only page. You probably shouldn't be here!")
 
-    @authenticated
+    #@authenticated
     async def get(self):
         self.write("This is a post only page. You probably shouldn't be here!")
         self.finish()
 
-    @authenticated
+    #@authenticated
     async def post(self):
         notebook = None
         section = None
@@ -254,13 +254,15 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         timestamp = get_timestamp()
         using_test_user = False
         try:
-            # Accept notebook submissions, saves, then grades them
-            
+            # Accept notebook submissions, saves, then grades them    
             user = self.get_current_user()
             log_info_csv("PRINT USER OBJ", course, section, assignment, str(user))
             if user is None:
                 url_referer = self.request.headers.get("Referer")
-                user = {"name": url_referer.split("/")[4]}
+                if url_referer is None:
+                    user = {"name": os.getenv("TEST_USER")}   
+                else:
+                    user = {"name": url_referer.split("/")[4]}
                 using_test_user = True
             req_data = tornado.escape.json_decode(self.request.body)
             # in the future, assignment should be metadata in notebook
@@ -312,7 +314,7 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
 
             log_error_csv(timestamp, user['name'], section, assignment, str(grade_submission_exception))
         except Exception as ex:  # pylint: disable=broad-except
-            log_error_csv(timestamp, user['name'], section, assignment, str(ex))
+            log_error_csv(timestamp, user, section, assignment, str(ex))
 
     async def _grade_and_post(self, args):
         """
