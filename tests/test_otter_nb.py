@@ -2,7 +2,6 @@ import pytest
 import os
 import shutil
 import otter_service.otter_nb as gn
-from helper import make_db, create_connection
 from firebase_admin import firestore
 
 

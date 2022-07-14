@@ -8,7 +8,6 @@ import traceback
 from datetime import datetime
 import os
 from hashlib import sha1
-from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
@@ -27,7 +26,6 @@ import tornado.gen
 from tornado.web import authenticated
 from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
-from otter_service import create_database
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -40,8 +38,6 @@ OTTER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("OTTER_LOG_FILE")
 ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
 ERROR_PATH = f"{VOLUME_PATH}/" + os.getenv("ERROR_PATH")
 SUBMISSIONS_PATH = f"{VOLUME_PATH}/" + os.getenv("SUBMISSIONS_PATH")
-DB_PATH = f"{VOLUME_PATH}/" + os.getenv("DB_PATH")
-
 
 def write_grade(grade_info):
     """
@@ -69,7 +65,7 @@ def write_grade(grade_info):
     }
     try:
         return db.collection(os.environ.get("ENVIRONMENT")).add(data)
-    except Error as err:
+    except Exception as err:
         raise Exception(f"Error inserting into Google FireStore for the following record: {grade_info}") from err
 
 
@@ -239,12 +235,12 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         """
         self.write("This is a post only page. You probably shouldn't be here!")
 
-    #@authenticated
+    # @authenticated
     async def get(self):
         self.write("This is a post only page. You probably shouldn't be here!")
         self.finish()
 
-    #@authenticated
+    # @authenticated
     async def post(self):
         notebook = None
         section = None
@@ -254,13 +250,13 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         timestamp = get_timestamp()
         using_test_user = False
         try:
-            # Accept notebook submissions, saves, then grades them    
+            # Accept notebook submissions, saves, then grades them
             user = self.get_current_user()
             log_info_csv("PRINT USER OBJ", course, section, assignment, str(user))
             if user is None:
                 url_referer = self.request.headers.get("Referer")
                 if url_referer is None:
-                    user = {"name": os.getenv("TEST_USER")}   
+                    user = {"name": os.getenv("TEST_USER")}
                 else:
                     user = {"name": url_referer.split("/")[4]}
                 using_test_user = True
@@ -333,14 +329,13 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             # Grade assignment
             grade = await grade_assignment(file_path, section, assignment)
             log_info_csv(name, course, section, assignment, f"Grade: {grade}")
-            # Write the grade to a sqlite database
+            # Write the grade to a Firestore
             grade_info = {
                 "userid": name,
                 "grade": grade,
                 "section": section,
                 "assignment": assignment
             }
-            db_path = f"{VOLUME_PATH}/gradebook.db"
             write_grade(grade_info)
             log_info_csv(name, course, section, assignment, f"Grade Written to database: {grade}")
 
@@ -466,9 +461,6 @@ def main():
             os.makedirs(ERROR_PATH)
         if not os.path.exists(SUBMISSIONS_PATH):
             os.makedirs(SUBMISSIONS_PATH)
-
-        if not os.path.exists(DB_PATH):
-            create_database.main()
         start_server()
         logging.getLogger('tornado.application').info("Starting Server")
         tornado.ioloop.IOLoop.current().start()
