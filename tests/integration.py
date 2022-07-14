@@ -28,4 +28,7 @@ def submit_test(map_item):
 
 
 import sys
-submit_test(sys.argv[1])
+if sys.argv[1] == "keys":
+    print(*list(server_map.keys()), sep = "\n - ")
+else:
+    submit_test(sys.argv[1])
