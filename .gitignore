@@ -3,7 +3,6 @@ venv
 docker-compose.yml
 deployment/cloud/deploy-remove.sh
 .DS_Store
-dump_gradebook.sh
 *.egg-info
 build
 dist
@@ -14,3 +13,6 @@ sops.linux
 .pylintrc
 settings.json
 __pycache__
+firebase-*
+firestore-*
+ui-debug.log

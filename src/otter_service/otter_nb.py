@@ -1,14 +1,12 @@
 import base64
 import json
 import time
-import logging
 import signal
 from functools import partial
 import traceback
 from datetime import datetime
 import os
 from hashlib import sha1
-from sqlite3 import Error
 from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
@@ -27,21 +25,20 @@ import tornado.gen
 from tornado.web import authenticated
 from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
-from otter_service import create_database
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import credentials, firestore
+import grpc
+from google.cloud.firestore_v1.gapic import firestore_client
+from google.cloud.firestore_v1.gapic.transports import firestore_grpc_transport
 
 PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb/')
-VOLUME_PATH = os.getenv("VOLUME_PATH")
-ACCESS_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("ACCESS_LOG_FILE")
-SERVER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("SERVER_LOG_FILE")
-OTTER_LOG_FILE = f"{VOLUME_PATH}/" + os.getenv("OTTER_LOG_FILE")
-ERROR_FILE = f"{VOLUME_PATH}/" + os.getenv("ERROR_FILE")
-ERROR_PATH = f"{VOLUME_PATH}/" + os.getenv("ERROR_PATH")
-SUBMISSIONS_PATH = f"{VOLUME_PATH}/" + os.getenv("SUBMISSIONS_PATH")
-DB_PATH = f"{VOLUME_PATH}/" + os.getenv("DB_PATH")
 
+# Use the application default credentials
+cred = credentials.ApplicationDefault()
+firebase_admin.initialize_app(cred, {
+    'projectId': os.environ.get("GCP_PROJECT_ID"),
+    'storageBucket': 'data8x-scratch.appspot.com/submissions'
+})
 
 def write_grade(grade_info):
     """
@@ -50,26 +47,18 @@ def write_grade(grade_info):
     :param grade_info: the four values in a tuple(userid, grade, section, lab, timestamp)
     :return Google FireStore document id
     """
-    # Use the application default credentials
-    cred = credentials.ApplicationDefault()
-    firebase_admin.initialize_app(cred, {
-        'projectId': os.environ.get("GCP_PROJECT_ID"),
-    })
-
-    db = firestore.client()
-    date_format = "%Y-%m-%d %H:%M:%S %Z"
-    date = datetime.now(tz=pytz.utc)
-    date = date.astimezone(timezone('US/Pacific'))
-    data = {
-        'user': grade_info["userid"],
-        'grade': grade_info["grade"],
-        'section': grade_info["section"],
-        'lab': grade_info["lab"],
-        'date': date.strftime(date_format)
-    }
     try:
-        return db.collection(os.environ.get("ENVIRONMENT")).add(data)
-    except Error as err:
+        db = firestore.client()
+        data = {
+            'user': grade_info["userid"],
+            'grade': grade_info["grade"],
+            'course': grade_info["course"],
+            'section': grade_info["section"],
+            'assignment': grade_info["assignment"],
+            'timestamp': get_timestamp()
+        }
+        return db.collection(f'{os.environ.get("ENVIRONMENT")}-grades').add(data)
+    except Exception as err:
         raise Exception(f"Error inserting into Google FireStore for the following record: {grade_info}") from err
 
 
@@ -239,28 +228,30 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         """
         self.write("This is a post only page. You probably shouldn't be here!")
 
-    @authenticated
+    # @authenticated
     async def get(self):
         self.write("This is a post only page. You probably shouldn't be here!")
         self.finish()
 
-    @authenticated
+    # @authenticated
     async def post(self):
         notebook = None
         section = None
         assignment = None
         user = {}
-        course = "8x"
+        course = "8x-default-should-be-in-notebook"
         timestamp = get_timestamp()
         using_test_user = False
         try:
             # Accept notebook submissions, saves, then grades them
-            
             user = self.get_current_user()
             log_info_csv("PRINT USER OBJ", course, section, assignment, str(user))
             if user is None:
                 url_referer = self.request.headers.get("Referer")
-                user = {"name": url_referer.split("/")[4]}
+                if url_referer is None:
+                    user = {"name": os.getenv("TEST_USER")}
+                else:
+                    user = {"name": url_referer.split("/")[4]}
                 using_test_user = True
             req_data = tornado.escape.json_decode(self.request.body)
             # in the future, assignment should be metadata in notebook
@@ -281,11 +272,13 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             if notebook is None or section is None or assignment is None:
                 raise GradeSubmissionException("Notebook does not have required metadata or maybe no notebook in post")
 
-            log_info_csv(user["name"], course, section, assignment, f"User logged in at {timestamp} -  Using Referrer: {using_test_user}")
-            # save notebook submission with user id and time stamp
-            submission_file = f"{VOLUME_PATH}/submissions/{user['name']}_{section}_{assignment}_{timestamp}.ipynb"
+            log_info_csv(user["name"], course, section, assignment, f"User logged in -  Using Referrer: {using_test_user}")
+            # save notebook submission with user id and time stamp - this will be deleted
+            submission_file = f"/tmp/{user['name']}_{section}_{assignment}_{timestamp}.ipynb"
             with open(submission_file, 'w', encoding="utf8") as outfile:
                 json.dump(notebook, outfile)
+            save_submission(user['name'], course, section, assignment, notebook)
+            log_info_csv(user["name"], course, section, assignment, "user submission saved to logs")
 
             args = {}
             args["course"] = course
@@ -310,9 +303,9 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
                 if assignment is None:
                     assignment = "Assignment: problem getting assignment - not in notebook?"
 
-            log_error_csv(timestamp, user['name'], section, assignment, str(grade_submission_exception))
+            log_error_csv(user['name'], course, section, assignment, str(grade_submission_exception))
         except Exception as ex:  # pylint: disable=broad-except
-            log_error_csv(timestamp, user['name'], section, assignment, str(ex))
+            log_error_csv(user, course, section, assignment, str(ex))
 
     async def _grade_and_post(self, args):
         """
@@ -326,14 +319,18 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         assignment = args["assignments"]
         name = args["name"]
         file_path = args["submission_file"]
-        timestamp = args["timestamp"]
         try:
             # Grade assignment
             grade = await grade_assignment(file_path, section, assignment)
             log_info_csv(name, course, section, assignment, f"Grade: {grade}")
-            # Write the grade to a sqlite database
-            grade_info = (name, grade, section, assignment, timestamp)
-            db_path = f"{VOLUME_PATH}/gradebook.db"
+            # Write the grade to a Firestore
+            grade_info = {
+                "userid": name,
+                "course": course,
+                "grade": grade,
+                "section": section,
+                "assignment": assignment
+            }
             write_grade(grade_info)
             log_info_csv(name, course, section, assignment, f"Grade Written to database: {grade}")
 
@@ -343,19 +340,47 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
                 log_info_csv(name, course, section, assignment, f"Grade NOT posted to EdX on purpose: {grade}")
                 raise GradePostException("NOT POSTING Grades on purpose; see deployment-config-encrypted.yaml -- POST_GRADE")
         except GradePostException as gp:
-            log_error_csv(timestamp, name, section, assignment, str(gp))
+            log_error_csv(name, course, section, assignment, str(gp))
         except Exception as ex:
-            log_error_csv(timestamp, name, section, assignment, str(ex))
-
+            log_error_csv(name, course, section, assignment, str(ex))
+        finally:
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
 def get_timestamp():
     """
     returns the time stamp in PST Time
     """
-    utc_now = pytz.utc.localize(datetime.utcnow())
-    pst_now = utc_now.astimezone(pytz.timezone("America/Los_Angeles"))
-    return pst_now.strftime("%Y-%m-%d-%H:%M:%S.%f")[:-3]
+    date_format = "%Y-%m-%d %H:%M:%S,%f"
+    date = datetime.now(tz=pytz.utc)
+    date = date.astimezone(timezone('US/Pacific'))
+    return date.strftime(date_format)[:-3]
 
+def write_logs(username, course, section, assignment, msg, trace, type, collection):
+    
+        
+    
+    if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
+        try:
+            db = firestore.client()
+            # this redirects FireStore to local emulator when local testing!
+            if os.getenv("ENVIRONMENT") == "otter-docker-local-test":
+                channel = grpc.insecure_channel("host.docker.internal:8080")
+                transport = firestore_grpc_transport.FirestoreGrpcTransport(channel=channel)
+                db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
+            data = {
+                'user': username,
+                'course': course,
+                'section': section,
+                'assignment': assignment,
+                'message': msg,
+                'trace': trace,
+                'type': type,
+                'timestamp': get_timestamp()
+            }
+            return db.collection(collection).add(data)
+        except Exception as err:
+            raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 def log_info_csv(username, course, section, assignment, msg):
     """
@@ -368,41 +393,77 @@ def log_info_csv(username, course, section, assignment, msg):
     :param assignment: the assignment
     :param msg: optional message to logs
     """
-    if os.getenv("VERBOSE_LOGGING") == "True":
-        try:
-            data_frame = pd.read_csv(OTTER_LOG_FILE)
-        except Exception:
-            data_frame = pd.DataFrame(columns=["timestamp", "username", "course", "section", "assignment", "message"])
+    write_logs(username, course, section, assignment, msg, None, "info", f'{os.environ.get("ENVIRONMENT")}-logs')
 
-        data_frame.loc[len(data_frame.index)] = [get_timestamp(), username, course, section, assignment, msg]
-        data_frame.to_csv(OTTER_LOG_FILE, index=False)
-
-
-def log_error_csv(timestamp, username, section, assignment, msg):
+def log_error_csv(username, course, section, assignment, msg):
     """
     This logs the errors occurring when posting assignments
 
     :param timestamp: when the error occurred
     :param username: the username
+    :param course: the course
     :param section: the section
     :param assignment: the assignment
     :param msg: optional message to logs
     """
+    write_logs(username, course, section, assignment, msg, str(traceback.format_exc()), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
+
+def log_tornado_issues(msg, type):
+    """
+    This logs the errors associated with tornado
+
+    :param msg: message about error
+    """
     try:
-        data_frame = pd.read_csv(ERROR_FILE)
-    except Exception:
-        data_frame = pd.DataFrame(columns=["timestamp", "username", "section", "assignment", "error", "filename"])
+        st =  str(traceback.format_exc()) 
+        st =  st if not "None" in st else None
+        db = firestore.client()
+        data = {
+            'message': msg,
+            'trace': st,
+            'type': type,
+            'timestamp': get_timestamp()
+        }
+        return db.collection(f'{os.environ.get("ENVIRONMENT")}-tornado-logs').add(data)
+    except Exception as err:
+        raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
-    filename = timestamp + "_" + str(username)
-    trace = f"User: {username}\nSection: {section}\nAssignment: {assignment}\n\n"
-    trace += str(traceback.format_exc())
+def save_submission(username, course, section, assignment, notebook):
+    """
+    This logs the errors associated with tornado
 
-    with open(f"{ERROR_PATH}/{filename}.txt", "a+", encoding="utf8") as file_handle:
-        file_handle.write(trace)
+    :param msg: message about error
+    """
+    try:
+        db = firestore.client()
+        data = {
+            'user': username,
+            'course': course,
+            'section': section,
+            'assignment': assignment,
+            'notebook': notebook,
+            'timestamp': get_timestamp()
+        }
+        return db.collection(f'{os.environ.get("ENVIRONMENT")}-submissions').add(data)
+    except Exception as err:
+        raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
-    data_frame.loc[len(data_frame.index)] = [timestamp, username, section, assignment, msg, filename]
-    data_frame.to_csv(ERROR_FILE, index=False)
+def sig_handler(server, sig, frame):
+    io_loop = tornado.ioloop.IOLoop.instance()
+    MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
 
+    def stop_loop(deadline):
+        io_loop.stop()
+        log_tornado_issues('Shutdown finally', "info")
+
+    def shutdown():
+        log_tornado_issues('Stopping http server', "info")
+        server.stop()
+        log_tornado_issues(f'Will shutdown in {MAX_WAIT_SECONDS_BEFORE_SHUTDOWN} seconds ...', "info")
+        stop_loop(time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
+
+    log_tornado_issues('Caught signal: %s', sig, "warning")
+    io_loop.add_callback_from_signal(shutdown)
 
 def start_server():
     """
@@ -411,10 +472,6 @@ def start_server():
     :return: the application tornado object
     """
     tornado.options.parse_command_line()
-
-    # app = tornado.web.Application(
-    #     [(PREFIX, GoferHandler)]
-    # )
     app = tornado.web.Application(
         [
             (PREFIX, GoferHandler),
@@ -428,19 +485,6 @@ def start_server():
         cookie_secret=os.urandom(32),
     )
 
-    logger = logging.getLogger('tornado.application')
-    file_handler = logging.FileHandler(SERVER_LOG_FILE)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    access_logger = logging.getLogger("tornado.access")
-    access_logger.setLevel(logging.DEBUG)
-    access_file_handler = logging.FileHandler(ACCESS_LOG_FILE)
-    access_file_handler.setFormatter(formatter)
-    access_logger.addHandler(access_file_handler)
-
     server = tornado.httpserver.HTTPServer(app)
     server.listen(10101)
 
@@ -449,44 +493,16 @@ def start_server():
 
     return app
 
-
 def main():
     """
-    This sets up the paths needed for gofer and starts tornado
+    start tornado
     """
     try:
-        if not os.path.exists(ERROR_PATH):
-            os.makedirs(ERROR_PATH)
-        if not os.path.exists(SUBMISSIONS_PATH):
-            os.makedirs(SUBMISSIONS_PATH)
-
-        if not os.path.exists(DB_PATH):
-            create_database.main()
         start_server()
-        logging.getLogger('tornado.application').info("Starting Server")
+        log_tornado_issues("Server starting", "info")
         tornado.ioloop.IOLoop.current().start()
     except Exception:
-        logging.getLogger('tornado.application').error(traceback.format_exc())
-
-
-def sig_handler(server, sig, frame):
-    io_loop = tornado.ioloop.IOLoop.instance()
-    MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
-
-    def stop_loop(deadline):
-        io_loop.stop()
-        logging.info('Shutdown finally')
-
-    def shutdown():
-        logging.info('Stopping http server')
-        server.stop()
-        logging.info('Will shutdown in %s seconds ...',
-                     MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
-        stop_loop(time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
-
-    logging.warning('Caught signal: %s', sig)
-    io_loop.add_callback_from_signal(shutdown)
-
+        log_tornado_issues("Server start up issues", "error")
 
 if __name__ == '__main__':
     main()

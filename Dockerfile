@@ -11,7 +11,6 @@ RUN apt-get update && \
 RUN apt-get install -y python3 && \
     apt-get install -y python3-pip && \
     apt-get install -y curl && \
-    apt-get install -y sqlite3 libsqlite3-dev && \
     apt-get install -y golang
 
 # install golang to support sops(python-sops does nto work with GCP KMS)

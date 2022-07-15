@@ -1,45 +1,44 @@
 import pytest
 import os
-import shutil
 import otter_service.otter_nb as gn
-from helper import make_db, create_connection
 from firebase_admin import firestore
 
+import grpc
+from google.cloud.firestore_v1.gapic import firestore_client
+from google.cloud.firestore_v1.gapic.transports import firestore_grpc_transport
 
 @pytest.fixture
 def app():
-    os.environ["VOLUME_PATH"] = "/tmp/otter"
-    error_file = os.environ["SERVER_LOG_FILE"]
-    os.makedirs(os.environ["VOLUME_PATH"], exist_ok=True)
-    gn.ERROR_FILE = os.environ["VOLUME_PATH"] + f"/{error_file}"
     return gn.start_server()
 
+@pytest.fixture
+def firebase_local():
+    channel = grpc.insecure_channel("localhost:8080")
+    transport = firestore_grpc_transport.FirestoreGrpcTransport(channel=channel)
+    db = firestore.client()
+    db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
+    yield db
 
 @pytest.mark.skip(reason="test oauth2 now")
 async def test_http_client(http_server_client):
     resp = await http_server_client.fetch('/services/gofer_nb/')
     assert resp.code == 302
     http_server_client.close()
-    os.remove(gn.ERROR_FILE)
-    shutil.rmtree(os.environ["VOLUME_PATH"])
-    os.makedirs(os.environ["VOLUME_PATH"])
-    del os.environ["VOLUME_PATH"]
 
 
-def test_write_grade():
-    grade_info = {"userid": "WRITE_TEST", "grade": 88.0, "section": "1", "lab": "lab99"}
+def test_write_grade(firebase_local):
+    grade_info = {"userid": "WRITE_TEST", "course":"8x-test", "grade": 88.0, "section": "1", "assignment": "lab99"}
     doc = gn.write_grade(grade_info)[1]
-    db = firestore.client()
-    doc_ref = db.collection(os.environ.get("ENVIRONMENT")).document(f'{doc.id}')
+    doc_ref = firebase_local.collection(f'{os.environ.get("ENVIRONMENT")}-grades').document(f'{doc.id}')
     doc_obj = doc_ref.get()
     doc_dict = doc_obj.to_dict()
 
     assert "WRITE_TEST" == doc_dict["user"]
     assert "1" == doc_dict["section"]
     assert 88.0 == doc_dict["grade"]
-    assert "lab99" == doc_dict["lab"]
+    assert "lab99" == doc_dict["assignment"]
 
-    db.collection(os.environ.get("ENVIRONMENT")).document(f'{doc.id}').delete()
+    firebase_local.collection(f'{os.environ.get("ENVIRONMENT")}-grades').document(f'{doc.id}').delete()
 
 
 def test_create_post_url():

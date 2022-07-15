@@ -28,20 +28,14 @@ export KUBECONFIG=./kube-context
 gcloud container clusters get-credentials otter-cluster --region us-central1 --project data8x-scratch                  
 kubectl config use "gke_data8x-scratch_us-central1_otter-cluster"
 if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" == "dev" ]; then
-    NFS_IP=$(gcloud compute addresses list --filter="name=( 'otter-nfs-$branch_name-private-ip')" --format="get(address)" 2>&1)
+    #NFS_IP=$(gcloud compute addresses list --filter="name=( 'otter-nfs-$branch_name-private-ip')" --format="get(address)" 2>&1)
     LB_IP=$(gcloud compute addresses list --filter="name=( 'otter-lb-external-ip-$branch_name')" --format="get(address)" 2>&1)
     NAMESPACE=otter-$branch_name
     kubectl config set-context --current --namespace=$NAMESPACE
     kubectl create namespace $NAMESPACE --save-config --dry-run=client -o yaml | kubectl apply -f -
-    echo "NFS IP: ${NFS_IP}"
+    #echo "NFS IP: ${NFS_IP}"
     echo "LB IP: ${LB_IP}"
     ./deployment/cloud/deploy-service-account.sh
-    
-    yq eval ".spec.nfs.server=\"$NFS_IP\"" -i deployment/cloud/deployment-persistent-volume.yaml
-    yq eval ".metadata.name=\"otter-volume-$branch_name\"" -i deployment/cloud/deployment-persistent-volume.yaml
-    
-    kubectl apply -f ./deployment/cloud/deployment-persistent-volume.yaml 
-    kubectl apply -f ./deployment/cloud/deployment-persistent-volume-claim.yaml
     
     yq eval ".data.ENVIRONMENT=\"$NAMESPACE\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     yq eval ".data.JUPYTERHUB_BASE_URL=\"$JUPYTERHUB_BASE_URL\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
@@ -63,7 +57,6 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     ./deployment/cloud/gcp-workload-identity.sh
     
     git checkout -- deployment/cloud/deployment-service.yaml
-    git checkout -- deployment/cloud/deployment-persistent-volume.yaml
     git checkout -- deployment/cloud/deployment-config-encrypted.yaml
 fi
 rm -f ./kube-context

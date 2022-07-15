@@ -1,14 +1,12 @@
 # otter-nb service
 
-This repo contains a tornado flask app that accepts .ipynb files and grades them in a dockerized environment. Assuming you are running a Jupyterhub, you can ask Jupyterhub to run this otter-service as a service; you also have the option to run it in a stand alone manner. Grades are saved to a sqlite database on the otter-service mounted volume.
+This repo contains a tornado flask app that accepts .ipynb files and grades them in a dockerized environment. Assuming you are running a Jupyterhub, you can ask Jupyterhub to run this otter-service as a service; you also have the option to run it in a stand alone manner. Grades are saved to a gcloud Cloud Firestore.
 
-A seperate Jupyterhub extension, [gofer_submit](https://github.com/data-8/gofer_submit), presents a "Submit" button to the user in a notebook rendered in Jupyterhub. The button is configured to serialize and send the notebook to this otter-service as well as notify the the user of the successful submission.
+A separate Jupyterhub extension, [gofer_submit](https://github.com/data-8/gofer_submit), presents a "Submit" button to the user in a notebook rendered in Jupyterhub. The button is configured to serialize and send the notebook to this otter-service as well as notify the the user of the successful submission.
 
-# Database setup
+# FireStore/Database setup
 
-This service, upon startup, creates and configures a sqlite database in the file `gradebook.db`. The `gradebook.db` file is created at the `VOLUME_PATH` environment variable configured in the `deployment-config-encrypted.yaml` file found in the directory `deployment/cloud/`.  If you are running a local installation the you will need to configure this environment variable in your environment along with a series of other environment variables explained later in this documentation.
-
-There is a file, `dump_grades.py`, that exports all the grades in the database to a `csv` file.
+All grades are written to gcloud Cloud FireStore. During local testing with pytest, the tests remove the collection created after verifying the data was written. Local docker testing, does not delete the entries but the collection is called, otter-docker-local-test, and can be viewed and deleted by going to the gcloud console and navigating to Cloud Firebase or Cloud Firestore.
 
 # Configuration
 
@@ -24,7 +22,7 @@ metadata:{
 ```
 
 ## Course config path
-Please see the reposiotry `data-8/materials-x22-private`. The repository houses a config file, 8x_course_config_edge.json and 8x_course_config.json. The system relies on this file specified in the environment variable, `COURSE_CONFIG_PATH`, to know which lab is associated with which assignment id in EdX. If you are not posting grades to an LTI server, than you do not need to worry about this.
+Please see the repository `data-8/materials-x22-private`. The repository houses a config file, 8x_course_config_edge.json and 8x_course_config.json. The system relies on this file specified in the environment variable, `COURSE_CONFIG_PATH`, to know which lab is associated with which assignment id in EdX. If you are not posting grades to an LTI server, than you do not need to worry about this.
 
 
 ## Test files
@@ -49,7 +47,7 @@ This is the current deployment configuration. We deploy the otter-service to gcl
 
 Once the GKE cluster is created in gcloud, executing the `deployment/cloud/deploy.sh` file  deploys the service to the cloud. 
 
-# Depoloyment Details:
+# Deployment Details:
 ## Rollback: 
 If we deploy and find problems the quickest way to rollback the deployment is to look at the revision history and undo the deployment by deploying to a previous revision number:
 - kubectl rollout history deployment otter-pod -n grader-k8-namespace
@@ -74,7 +72,24 @@ of 10 pods allowed.
 You can see the status of the horizontal scaling via this command:
 - kubectl get hpa -n grader-k8-namespace
 
+# pytest
+Run ./deployment/local/pytest.sh -- this will start the Firestore emulator and run the tests.
+If the emulator is already running it shuts it down. I shut down the emulator when the tests are done
+as well but you could comment out this line to check out the data that was stored.
+
 # Local installation for testing/developing
+
+Install a FireStore Emulator so you test locally:
+- Install FireStore CLI: https://firebase.google.com/docs/cli/#install-cli-mac-linux
+- firebase login
+- firebase projects:list
+- firebase setup:emulators:firestore
+- make java jdk installed
+- firebase emulators:start --only firestore --project data8x-scratch
+- You can see the UI here: http://localhost:4000/firestore
+- python3 -m pip install google-cloud-firestore
+- You will notice the re-direct in firebase_local fixture used by test_write_grade in test_otter_nb.py
+
 
 With docker installed, you can use the `Dockerfile-dev` file to deploy a local instance of otter-service. The `deployment/local/build.sh` file gives some guidance to building and installing local changes to otter-service for testing. The usual process is to make changes, execute `build.sh`, which relies on a `docker-compose.yml` file. A sample is below but before we look, I would also study the file `tests/integration.py`. If you execute this file, you can test the service via a web connection. 
 
