@@ -74,6 +74,18 @@ You can see the status of the horizontal scaling via this command:
 
 # Local installation for testing/developing
 
+Install a FireStore Emulator so you test locally:
+- Install FireStore CLI: https://firebase.google.com/docs/cli/#install-cli-mac-linux
+- firebase login
+- firebase projects:list
+- firebase setup:emulators:firestore
+- make java jdk installed
+- firebase emulators:start --only firestore --project data8x-scratch
+- You can see the UI here: http://localhost:4000/firestore
+- python3 -m pip install google-cloud-firestore
+- You will notice the re-direct in firebase_local fixture used by test_write_grade in test_otter_nb.py
+
+
 With docker installed, you can use the `Dockerfile-dev` file to deploy a local instance of otter-service. The `deployment/local/build.sh` file gives some guidance to building and installing local changes to otter-service for testing. The usual process is to make changes, execute `build.sh`, which relies on a `docker-compose.yml` file. A sample is below but before we look, I would also study the file `tests/integration.py`. If you execute this file, you can test the service via a web connection. 
 
 Sample docker-compose.yml:

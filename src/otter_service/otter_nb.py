@@ -27,6 +27,9 @@ from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 import firebase_admin
 from firebase_admin import credentials, firestore
+import grpc
+from google.cloud.firestore_v1.gapic import firestore_client
+from google.cloud.firestore_v1.gapic.transports import firestore_grpc_transport
 
 PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb/')
 
@@ -354,9 +357,17 @@ def get_timestamp():
     return date.strftime(date_format)[:-3]
 
 def write_logs(username, course, section, assignment, msg, trace, type, collection):
+    
+        
+    
     if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
         try:
             db = firestore.client()
+            # this redirects FireStore to local emulator when local testing!
+            if os.getenv("ENVIRONMENT") == "otter-docker-local-test":
+                channel = grpc.insecure_channel("host.docker.internal:8080")
+                transport = firestore_grpc_transport.FirestoreGrpcTransport(channel=channel)
+                db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
             data = {
                 'user': username,
                 'course': course,

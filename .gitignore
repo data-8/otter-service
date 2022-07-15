@@ -13,3 +13,6 @@ sops.linux
 .pylintrc
 settings.json
 __pycache__
+firebase-*
+firestore-*
+ui-debug.log

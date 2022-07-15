@@ -30,13 +30,6 @@ spec:
               memory: 8Gi
           ports:
             - containerPort: 10101
-          volumeMounts:
-            - mountPath: "/mnt/data"
-              name: otter-mnt
           envFrom:
             - configMapRef:
                 name: otter-env
-      volumes:
-        - name: otter-mnt
-          persistentVolumeClaim:
-            claimName: otter-claim
