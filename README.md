@@ -72,6 +72,11 @@ of 10 pods allowed.
 You can see the status of the horizontal scaling via this command:
 - kubectl get hpa -n grader-k8-namespace
 
+# pytest
+Run ./deployment/local/pytest.sh -- this will start the Firestore emulator and run the tests.
+If the emulator is already running it shuts it down. I shut down the emulator when the tests are done
+as well but you could comment out this line to check out the data that was stored.
+
 # Local installation for testing/developing
 
 Install a FireStore Emulator so you test locally:
