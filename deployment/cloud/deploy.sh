@@ -18,15 +18,19 @@ if [ "$branch_name" == "dev" ]; then
     python3 -m pip install dist/otter_service-${version}.tar.gz --force
     python3 -m twine upload dist/*$version*
     
+    cp -R ../otter-grader ./otter-grader
+
     yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
     # if breaks on Permission denied run: gcloud auth login
     gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version  --config ./deployment/cloud/cloudbuild.yaml
+
+    rm -rf ./otter-grader
 fi
 
 export KUBECONFIG=./kube-context
 # gcloud container --project "data8x-scratch" clusters create-auto "otter-cluster" --region "us-central1" --release-channel "regular" --network "projects/data8x-scratch/global/networks/default" --subnetwork "projects/data8x-scratch/regions/us-central1/subnetworks/default"
-gcloud container clusters get-credentials otter-cluster --region us-central1 --project data8x-scratch                  
-kubectl config use "gke_data8x-scratch_us-central1_otter-cluster"
+gcloud container clusters get-credentials otter-cluster-v2 --region us-central1 --project data8x-scratch                  
+kubectl config use "gke_data8x-scratch_us-central1-c_otter-cluster-v2"
 if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" == "dev" ]; then
     #NFS_IP=$(gcloud compute addresses list --filter="name=( 'otter-nfs-$branch_name-private-ip')" --format="get(address)" 2>&1)
     LB_IP=$(gcloud compute addresses list --filter="name=( 'otter-lb-external-ip-$branch_name')" --format="get(address)" 2>&1)
@@ -37,11 +41,15 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     echo "LB IP: ${LB_IP}"
     ./deployment/cloud/deploy-service-account.sh
     
+    kubectl apply -f ./deployment/cloud/deploy-storage-class.yaml
+    kubectl apply -f ./deployment/cloud/deployment-opt-persistent-volume-claim.yaml
+    kubectl apply -f ./deployment/cloud/deployment-tmp-persistent-volume-claim.yaml
+
     yq eval ".data.ENVIRONMENT=\"$NAMESPACE\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     yq eval ".data.JUPYTERHUB_BASE_URL=\"$JUPYTERHUB_BASE_URL\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     yq eval ".data.JUPYTERHUB_API_URL=\"$JUPYTERHUB_API_URL\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
-    #we ignore the checksum so that clear text values can be changes for deployments -- like POST_GRADE can can be made false
-    #for testing and more
+#     #we ignore the checksum so that clear text values can be changes for deployments -- like POST_GRADE can can be made false
+#     #for testing and more
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
     kubectl apply -f ./deployment/cloud/deployment.yaml
     
