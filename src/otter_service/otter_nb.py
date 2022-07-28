@@ -462,7 +462,7 @@ def sig_handler(server, sig, frame):
         log_tornado_issues(f'Will shutdown in {MAX_WAIT_SECONDS_BEFORE_SHUTDOWN} seconds ...', "info")
         stop_loop(time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
 
-    log_tornado_issues('Caught signal: %s', sig, "warning")
+    log_tornado_issues(f'Caught signal: {sig}', "warning")
     io_loop.add_callback_from_signal(shutdown)
 
 def start_server():
