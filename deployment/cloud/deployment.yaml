@@ -21,15 +21,73 @@ spec:
           imagePullPolicy: Always
           resources:
             limits:
-              cpu: 500m
+              cpu: 200m
               ephemeral-storage: 1Gi
-              memory: 8Gi
+              memory: 1Gi
             requests:
-              cpu: 500m
+              cpu: 200m
               ephemeral-storage: 1Gi
-              memory: 8Gi
+              memory: 1Gi
           ports:
             - containerPort: 10101
+          volumeMounts:
+            - name: opt-volume
+              mountPath: /opt
+            - name: tmp-volume
+              mountPath: /tmp
+          env:
+            - name: DOCKER_HOST 
+              value: tcp://dind:2375
+            - name: DOCKER_CLI_EXPERIMENTAL
+              value: enabled
           envFrom:
             - configMapRef:
                 name: otter-env
+       
+        # - name: dind-daemon 
+        #   image: docker:1.12.6-dind 
+        #   resources: 
+        #       requests: 
+        #           cpu: 20m 
+        #           memory: 512Mi 
+        #   securityContext: 
+        #       privileged: true 
+        #   volumeMounts:
+        #     - name: opt-volume
+        #       mountPath: /opt
+        #     - name: tmp-volume
+        #       mountPath: /tmp   
+        #   env:
+        #     - name: DOCKER_TLS_CERTDIR
+        #       value: ""   
+        - name: otter-dind
+          image: docker:20-dind
+          args: ["--tls=false"]
+          imagePullPolicy: Always
+          securityContext: 
+            privileged: true 
+          resources:
+            limits:
+              cpu: 200m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
+          volumeMounts:
+            - name: opt-volume
+              mountPath: /opt
+            - name: tmp-volume
+              mountPath: /tmp
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: ""
+      volumes:
+        - name: opt-volume
+          persistentVolumeClaim:
+            claimName: otter-opt-volume-claim
+        - name: tmp-volume
+          persistentVolumeClaim:
+            claimName: otter-tmp-volume-claim
+

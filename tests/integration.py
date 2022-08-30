@@ -17,7 +17,7 @@ server_map = {
 
 def submit_test(map_item):
     # I use this file to test from the shell
-    with open("tests/test_files/lab01.ipynb", 'r', encoding="utf-8") as myfile:
+    with open("tests/test_files/lab05.ipynb", 'r', encoding="utf-8") as myfile:
         data = myfile.read()
 
     data = json.loads(data)

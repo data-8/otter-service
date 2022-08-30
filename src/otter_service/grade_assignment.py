@@ -75,9 +75,8 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
                                          assignment=assignment)
         # command = [
         #     'otter', 'grade',
-        #     '-a',
-        #     zip_path, '-p',
-        #     submission
+        #     '-a', zip_path, 
+        #     '-p', submission
         # ]
         command = [
             'otter', 'run',
@@ -113,7 +112,7 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
                 grade = line.split(" ")[5][1:-2]
         if grade is None:
             raise Exception(f"Unable to determine grade coming from otter on: {submission}")
-        return float(grade) / 100
+        return float(grade)
     except asyncio.TimeoutError:
         raise Exception(f'Grading timed out for {submission}')
     except Exception as e:

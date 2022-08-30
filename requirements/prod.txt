@@ -1,5 +1,5 @@
 aiohttp==3.5.4
-alembic==1.0.6
+alembic==1.4
 appnope==0.1.0
 async-generator==1.10
 async-timeout==3.0.1
@@ -17,7 +17,7 @@ idna-ssl==1.1.0
 ipython==7.2.0
 ipython-genutils==0.2.0
 jedi==0.13.2
-Jinja2==2.10
+Jinja2==2.11
 jupyterhub==2.3.0
 lxml==4.6.3
 Mako==1.0.7
