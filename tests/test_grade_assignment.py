@@ -25,11 +25,11 @@ def test_download_autograder_materials(configure):
 
 @pytest.mark.asyncio
 async def test_grade_assignment(configure):
-    solutions_path = 'tests/test_files/lab01-autograder.zip'
+    solutions_path = 'tests/test_files/autograder.zip'
     secrets_file = os.path.join(os.path.dirname(__file__), "test_files/gh_key.yaml")
-    grade = await ga.grade_assignment("tests/test_files/lab01.ipynb",
+    grade = await ga.grade_assignment("tests/test_files/lab05.ipynb",
                                       "1",
-                                      "lab01",
+                                      "lab05",
                                       solutions_path=solutions_path,
                                       sops_path="sops",
                                       secrets_file=secrets_file,

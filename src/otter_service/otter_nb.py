@@ -231,6 +231,8 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
     # @authenticated
     async def get(self):
         self.write("This is a post only page. You probably shouldn't be here!")
+        user = self.get_current_user()
+        self.write(json.dumps(user))
         self.finish()
 
     # @authenticated
@@ -274,7 +276,8 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
 
             log_info_csv(user["name"], course, section, assignment, f"User logged in -  Using Referrer: {using_test_user}")
             # save notebook submission with user id and time stamp - this will be deleted
-            submission_file = f"/tmp/{user['name']}_{section}_{assignment}_{timestamp}.ipynb"
+            sub_timestamp = timestamp.replace(" ", "-").replace(",", "-").replace(":","-")
+            submission_file = f"/tmp/{user['name']}_{section}_{assignment}_{sub_timestamp}.ipynb"
             with open(submission_file, 'w', encoding="utf8") as outfile:
                 json.dump(notebook, outfile)
             save_submission(user['name'], course, section, assignment, notebook)
@@ -345,7 +348,8 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             log_error_csv(name, course, section, assignment, str(ex))
         finally:
             if os.path.exists(file_path):
-                os.remove(file_path)
+                print("will remove")
+                #os.remove(file_path)
 
 def get_timestamp():
     """
@@ -357,9 +361,6 @@ def get_timestamp():
     return date.strftime(date_format)[:-3]
 
 def write_logs(username, course, section, assignment, msg, trace, type, collection):
-    
-        
-    
     if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
         try:
             db = firestore.client()
@@ -393,7 +394,10 @@ def log_info_csv(username, course, section, assignment, msg):
     :param assignment: the assignment
     :param msg: optional message to logs
     """
-    write_logs(username, course, section, assignment, msg, None, "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+    try:
+        write_logs(username, course, section, assignment, msg, None, "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+    except:
+        print("here")
 
 def log_error_csv(username, course, section, assignment, msg):
     """
@@ -406,7 +410,10 @@ def log_error_csv(username, course, section, assignment, msg):
     :param assignment: the assignment
     :param msg: optional message to logs
     """
-    write_logs(username, course, section, assignment, msg, str(traceback.format_exc()), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
+    try:
+        write_logs(username, course, section, assignment, msg, str(traceback.format_exc()), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
+    except:
+        print("here1")
 
 def log_tornado_issues(msg, type):
     """
@@ -426,7 +433,8 @@ def log_tornado_issues(msg, type):
         }
         return db.collection(f'{os.environ.get("ENVIRONMENT")}-tornado-logs').add(data)
     except Exception as err:
-        raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
+        #raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
+        print("here 34")
 
 def save_submission(username, course, section, assignment, notebook):
     """
@@ -499,7 +507,6 @@ def main():
     """
     try:
         start_server()
-        log_tornado_issues("Server starting", "info")
         tornado.ioloop.IOLoop.current().start()
     except Exception:
         log_tornado_issues("Server start up issues", "error")
