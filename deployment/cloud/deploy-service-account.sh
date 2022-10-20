@@ -28,6 +28,11 @@ gcloud projects add-iam-policy-binding -q data8x-scratch \
     --role "roles/datastore.user" \
     --no-user-output-enabled
 
+    gcloud projects add-iam-policy-binding -q data8x-scratch \
+    --member "serviceAccount:otter-sa@data8x-scratch.iam.gserviceaccount.com" \
+    --role "roles/datastore.user" \
+    --no-user-output-enabled
+
 #Tie the K8 SA to GCloud SA:
 #Allow impersonation:
 gcloud iam service-accounts add-iam-policy-binding -q otter-sa@data8x-scratch.iam.gserviceaccount.com \

@@ -22,10 +22,6 @@ ADD ./requirements/prod.txt /opt/otter-service/prod.txt
 ADD ./requirements/dev.txt /opt/otter-service/dev.txt
 RUN python3 -m pip install -r /opt/otter-service/dev.txt
 
-#TODO: as soon as new version comes out get rid of this line
-ADD otter-grader /opt/otter-grader
-RUN python3 -m pip install /opt/otter-grader
-
 
 COPY ./dist/otter_service-${OTTER_SERVICE_VERSION}.tar.gz /opt/otter-service/
 RUN python3 -m pip install /opt/otter-service/otter_service-${OTTER_SERVICE_VERSION}.tar.gz

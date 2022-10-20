@@ -3,6 +3,7 @@ import async_timeout
 import requests
 import tarfile
 import os
+import glob
 from otter_service import access_sops_keys
 import shutil
 
@@ -36,6 +37,11 @@ def download_autograder_materials(url, save_path=None):
     os.remove(download_path)
     return storage_path
 
+def remove_notebook():
+    files = glob.glob('/tmp/*')
+    for f in files:
+        if not os.path.isdir(f):
+            os.remove(f)
 
 async def grade_assignment(submission, sec='3', assignment='lab01', solutions_path=None, sops_path=None, secrets_file=None, save_path=None):
     """
@@ -73,16 +79,11 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
                                          assign_type=assign_type,
                                          sec=sec,
                                          assignment=assignment)
-        # command = [
-        #     'otter', 'grade',
-        #     '-a', zip_path, 
-        #     '-p', submission
-        # ]
+
         command = [
-            'otter', 'run',
-            '-a',
-            zip_path,
-            submission
+            'otter', 'grade',
+            '-a', zip_path,
+            '-p', submission
         ]
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -91,7 +92,10 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
             stderr=asyncio.subprocess.PIPE
         )
 
-        async with async_timeout.timeout(600):
+        # this is waiting for communication back from the process
+        # some images are quite big and take some time to build the first
+        # time through - like 20 min for otter-grader
+        async with async_timeout.timeout(2000):
             stdout, stderr = await process.communicate()
 
         for line in stderr.decode('utf-8').split('\n'):
@@ -101,19 +105,15 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
             if 'Killed' in line:
                 # Our container was killed, so let's just skip this one
                 raise Exception(f"Container was killed -- nothing will work: {submission}")
-        # grade = stdout.decode("utf-8").strip()
-        # if grade is None or grade == '':
-        #     cmd = ' '.join(command)
-        #     raise Exception(f"Unable to determine grade coming from otter on: {submission} using this commnad: {cmd}")
-        lines = stdout.decode("utf-8").strip().split("\n")
-        grade = None
-        for line in lines:
-            if "Total Score" in line:
-                grade = line.split(" ")[5][1:-2]
-        if grade is None:
-            raise Exception(f"Unable to determine grade coming from otter on: {submission}")
+        grade = stdout.decode("utf-8").strip()
+        if grade is None or grade == '':
+            cmd = ' '.join(command)
+            raise Exception(f"Unable to determine grade coming from otter on: {submission} using this commnad: {cmd}")
+        
         return float(grade)
     except asyncio.TimeoutError:
         raise Exception(f'Grading timed out for {submission}')
     except Exception as e:
         raise e
+    finally:
+        remove_notebook()

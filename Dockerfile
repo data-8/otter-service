@@ -21,10 +21,6 @@ COPY ./requirements/prod.txt /opt/otter-service/prod.txt
 RUN python3 -m pip install -r /opt/otter-service/prod.txt
 RUN python3 -m pip install otter-service
 
-#TODO: as soon as new version comes out get rid of this line
-ADD otter-grader /opt/otter-grader
-RUN python3 -m pip install /opt/otter-grader
-
 # install docker cli
 ENV DOCKER_VERSION 5:20.10.17~3-0~ubuntu-focal
 RUN apt-get update
