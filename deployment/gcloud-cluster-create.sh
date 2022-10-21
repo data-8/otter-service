@@ -18,11 +18,11 @@ gcloud beta container --project "data8x-scratch" clusters create "otter-cluster-
 --subnetwork "projects/data8x-scratch/regions/us-central1/subnetworks/default" \
 --no-enable-intra-node-visibility \
 --default-max-pods-per-node "110" \
+--enable-autoscaling \
+--min-nodes "1" \
+--max-nodes "2" \
 --no-enable-master-authorized-networks \
 --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver,GcpFilestoreCsiDriver \
---enable-autoscaling \
---min-nodes "0" \
---max-nodes "1" \
 --enable-autoupgrade \
 --enable-autorepair \
 --max-surge-upgrade 1 \
