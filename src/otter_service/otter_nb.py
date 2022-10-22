@@ -241,7 +241,7 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
         section = None
         assignment = None
         user = {}
-        course = "8x-default-should-be-in-notebook"
+        course = "not-set-yet"
         timestamp = get_timestamp()
         using_test_user = False
         try:
