@@ -28,10 +28,10 @@ from otter_service.grade_assignment import grade_assignment
 import firebase_admin
 from firebase_admin import credentials, firestore
 import grpc
-from google.cloud.firestore_v1.gapic import firestore_client
-from google.cloud.firestore_v1.gapic.transports import firestore_grpc_transport
+from google.cloud.firestore_v1.client import firestore_client
+from google.cloud.firestore_v1.client import firestore_grpc_transport
 
-PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/gofer_nb/')
+PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/otter_grade/')
 
 # Use the application default credentials
 cred = credentials.ApplicationDefault()

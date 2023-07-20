@@ -20,21 +20,24 @@ def download_autograder_materials(url, save_path=None):
         save_path = "."
         download_path = "./materials.tar.gz"
     r = requests.get(url, stream=True)
+
     if r.status_code == 200:
         with open(download_path, 'wb') as f:
             f.write(r.raw.read())
-    file = tarfile.open(download_path)
-    file.extractall(save_path)
-    file.close()
-    url_parts = url.split("/")
-    branch = url_parts[-1].split(".")[0]
-    file_name = os.environ["AUTOGRADER_REPO"]
-    extracted_path = f"{save_path}/{file_name}-{branch}"
-    storage_path = f"{save_path}/{file_name}"
-    if os.path.isdir(storage_path):
-        shutil.rmtree(storage_path)
-    os.rename(extracted_path, storage_path)
-    os.remove(download_path)
+        file = tarfile.open(download_path)
+        file.extractall(save_path)
+        file.close()
+        url_parts = url.split("/")
+        branch = url_parts[-1].split(".")[0]
+        file_name = os.environ["AUTOGRADER_REPO"]
+        extracted_path = f"{save_path}/{file_name}-{branch}"
+        storage_path = f"{save_path}/{file_name}"
+        if os.path.isdir(storage_path):
+            shutil.rmtree(storage_path)
+        os.rename(extracted_path, storage_path)
+        os.remove(download_path)
+    else:
+        raise Exception(f"Unable to access: {url}")
     return storage_path
 
 def remove_notebook():
@@ -105,11 +108,12 @@ async def grade_assignment(submission, sec='3', assignment='lab01', solutions_pa
             if 'Killed' in line:
                 # Our container was killed, so let's just skip this one
                 raise Exception(f"Container was killed -- nothing will work: {submission}")
+
         grade = stdout.decode("utf-8").strip()
         if grade is None or grade == '':
             cmd = ' '.join(command)
             raise Exception(f"Unable to determine grade coming from otter on: {submission} using this commnad: {cmd}")
-        
+
         return float(grade)
     except asyncio.TimeoutError:
         raise Exception(f'Grading timed out for {submission}')

@@ -4,8 +4,8 @@ import otter_service.otter_nb as gn
 from firebase_admin import firestore
 
 import grpc
-from google.cloud.firestore_v1.gapic import firestore_client
-from google.cloud.firestore_v1.gapic.transports import firestore_grpc_transport
+from google.cloud.firestore_v1.client import firestore_client
+from google.cloud.firestore_v1.client import firestore_grpc_transport
 
 @pytest.fixture
 def app():
@@ -21,7 +21,7 @@ def firebase_local():
 
 @pytest.mark.skip(reason="test oauth2 now")
 async def test_http_client(http_server_client):
-    resp = await http_server_client.fetch('/services/gofer_nb/')
+    resp = await http_server_client.fetch('/services/otter_grade/')
     assert resp.code == 302
     http_server_client.close()
 
