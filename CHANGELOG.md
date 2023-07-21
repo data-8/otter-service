@@ -1,3 +1,13 @@
+## 0.2.4
+
+#### Enhancements made
+
+- Ubuntu 22.04
+- Cleaning OAuth, tornado libraries
+- Flake8 Lint cleanUp
+- Updated route to /services/otter_grade
+
+
 ## 0.1.75.13
 
 #### Enhancements made
