@@ -217,7 +217,7 @@ async def post_grade(user_id, grade, course, section, assignment):
         raise Exception(f"Problem Posting Grade to LTI:{ex}") from ex
 
 
-class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
+class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
     """
     This class handles the HTTP requests for this tornado instance
     """
@@ -348,8 +348,7 @@ class GoferHandler(HubOAuthenticated, tornado.web.RequestHandler):
             log_error_csv(name, course, section, assignment, str(ex))
         finally:
             if os.path.exists(file_path):
-                print("will remove")
-                #os.remove(file_path)
+                os.remove(file_path)
 
 def get_timestamp():
     """
@@ -396,8 +395,9 @@ def log_info_csv(username, course, section, assignment, msg):
     """
     try:
         write_logs(username, course, section, assignment, msg, None, "info", f'{os.environ.get("ENVIRONMENT")}-logs')
-    except:
-        print("here")
+    except Exception as e:
+        raise e
+
 
 def log_error_csv(username, course, section, assignment, msg):
     """
@@ -412,8 +412,8 @@ def log_error_csv(username, course, section, assignment, msg):
     """
     try:
         write_logs(username, course, section, assignment, msg, str(traceback.format_exc()), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
-    except:
-        print("here1")
+    except Exception as e:
+        raise e
 
 def log_tornado_issues(msg, type):
     """
@@ -433,8 +433,7 @@ def log_tornado_issues(msg, type):
         }
         return db.collection(f'{os.environ.get("ENVIRONMENT")}-tornado-logs').add(data)
     except Exception as err:
-        #raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
-        print("here 34")
+        raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 def save_submission(username, course, section, assignment, notebook):
     """
@@ -482,15 +481,15 @@ def start_server():
     tornado.options.parse_command_line()
     app = tornado.web.Application(
         [
-            (PREFIX, GoferHandler),
-            (
-                url_path_join(
-                    os.environ['JUPYTERHUB_SERVICE_PREFIX'], 'oauth_callback'
-                ),
-                HubOAuthCallbackHandler,
-            )
+            (PREFIX, OtterHandler)
+            # (
+            #     url_path_join(
+            #         PREFIX, 'oauth_callback'
+            #     ),
+            #     HubOAuthCallbackHandler,
+            # )
         ],
-        cookie_secret=os.urandom(32),
+        cookie_secret=os.urandom(32)
     )
 
     server = tornado.httpserver.HTTPServer(app)
@@ -508,7 +507,7 @@ def main():
     try:
         start_server()
         tornado.ioloop.IOLoop.current().start()
-    except Exception:
+    except Exception as e:
         log_tornado_issues("Server start up issues", "error")
 
 if __name__ == '__main__':

@@ -15,9 +15,9 @@ data:
     JUPYTERHUB_API_URL: set-via-script
     JUPYTERHUB_BASE_URL: set-via-script
     JUPYTERHUB_API_TOKEN: ENC[AES256_GCM,data:hqeouXvrJQOWHHILtiRq/TnlnhNx57FFedb9iiWdXYaED1UqM+hBfwxheReOUf0KOFTKPo+FYj3pDxC7ZD2gnA==,iv:jkgjt7Qo4JgW6rFeaXS7U8QZ58XAl3Cb7W1/ZHgZ2KY=,tag:3KzIAeVJLrwtyfd7XXJNLg==,type:str]
-    JUPYTERHUB_CLIENT_ID: service-gofer_nb
-    JUPYTERHUB_SERVICE_PREFIX: /services/gofer_nb/
-    JUPYTERHUB_SERVICE_NAME: gofer_nb
+    JUPYTERHUB_CLIENT_ID: service-otter_grade
+    JUPYTERHUB_SERVICE_PREFIX: /services/otter_grade/
+    JUPYTERHUB_SERVICE_NAME: otter_grade
     TEST_USER: 594aed203b01b16a7a025c2f3e037933
 sops:
     kms: []
