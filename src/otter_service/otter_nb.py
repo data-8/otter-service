@@ -8,11 +8,9 @@ from datetime import datetime
 import os
 from hashlib import sha1
 from oauthlib.oauth1.rfc5849 import signature, parameters
-import pandas as pd
 import pytz
 from pytz import timezone
-from jupyterhub.services.auth import HubOAuthenticated, HubOAuthCallbackHandler
-from jupyterhub.utils import url_path_join
+from jupyterhub.services.auth import HubOAuthenticated
 from lxml import etree
 import aiohttp
 import async_timeout
@@ -22,7 +20,6 @@ import tornado.ioloop
 import tornado.escape
 import tornado.options
 import tornado.gen
-from tornado.web import authenticated
 from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 import firebase_admin
@@ -39,6 +36,7 @@ firebase_admin.initialize_app(cred, {
     'projectId': os.environ.get("GCP_PROJECT_ID"),
     'storageBucket': 'data8x-scratch.appspot.com/submissions'
 })
+
 
 def write_grade(grade_info):
     """
@@ -176,9 +174,9 @@ async def post_grade(user_id, grade, course, section, assignment):
             'oauth_timestamp': str(time.time()),
             'oauth_nonce': str(time.time())
         }
-        base_string = signature.construct_base_string(
+        base_string = signature.signature_base_string(
             'POST',
-            signature.normalize_base_string_uri(outcomes_url),
+            outcomes_url,
             signature.normalize_parameters(
                 signature.collect_parameters(body=args, headers={})
             )
@@ -276,7 +274,7 @@ class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
 
             log_info_csv(user["name"], course, section, assignment, f"User logged in -  Using Referrer: {using_test_user}")
             # save notebook submission with user id and time stamp - this will be deleted
-            sub_timestamp = timestamp.replace(" ", "-").replace(",", "-").replace(":","-")
+            sub_timestamp = timestamp.replace(" ", "-").replace(",", "-").replace(":", "-")
             submission_file = f"/tmp/{user['name']}_{section}_{assignment}_{sub_timestamp}.ipynb"
             with open(submission_file, 'w', encoding="utf8") as outfile:
                 json.dump(notebook, outfile)
@@ -350,6 +348,7 @@ class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
             if os.path.exists(file_path):
                 os.remove(file_path)
 
+
 def get_timestamp():
     """
     returns the time stamp in PST Time
@@ -358,6 +357,7 @@ def get_timestamp():
     date = datetime.now(tz=pytz.utc)
     date = date.astimezone(timezone('US/Pacific'))
     return date.strftime(date_format)[:-3]
+
 
 def write_logs(username, course, section, assignment, msg, trace, type, collection):
     if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
@@ -381,6 +381,7 @@ def write_logs(username, course, section, assignment, msg, trace, type, collecti
             return db.collection(collection).add(data)
         except Exception as err:
             raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
+
 
 def log_info_csv(username, course, section, assignment, msg):
     """
@@ -415,6 +416,7 @@ def log_error_csv(username, course, section, assignment, msg):
     except Exception as e:
         raise e
 
+
 def log_tornado_issues(msg, type):
     """
     This logs the errors associated with tornado
@@ -422,8 +424,8 @@ def log_tornado_issues(msg, type):
     :param msg: message about error
     """
     try:
-        st =  str(traceback.format_exc()) 
-        st =  st if not "None" in st else None
+        st = str(traceback.format_exc())
+        st = st if "None" not in st else None
         db = firestore.client()
         data = {
             'message': msg,
@@ -434,6 +436,7 @@ def log_tornado_issues(msg, type):
         return db.collection(f'{os.environ.get("ENVIRONMENT")}-tornado-logs').add(data)
     except Exception as err:
         raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
+
 
 def save_submission(username, course, section, assignment, notebook):
     """
@@ -455,6 +458,7 @@ def save_submission(username, course, section, assignment, notebook):
     except Exception as err:
         raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
+
 def sig_handler(server, sig, frame):
     io_loop = tornado.ioloop.IOLoop.instance()
     MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
@@ -471,6 +475,7 @@ def sig_handler(server, sig, frame):
 
     log_tornado_issues(f'Caught signal: {sig}', "warning")
     io_loop.add_callback_from_signal(shutdown)
+
 
 def start_server():
     """
@@ -500,6 +505,7 @@ def start_server():
 
     return app
 
+
 def main():
     """
     start tornado
@@ -507,8 +513,9 @@ def main():
     try:
         start_server()
         tornado.ioloop.IOLoop.current().start()
-    except Exception as e:
+    except Exception:
         log_tornado_issues("Server start up issues", "error")
+
 
 if __name__ == '__main__':
     main()

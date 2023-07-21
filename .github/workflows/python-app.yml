@@ -16,7 +16,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - id: 'auth'
       uses: 'google-github-actions/auth@v0'
       with:
@@ -29,10 +29,10 @@ jobs:
     - name: 'Use gcloud CLI'
       run: 'gcloud info'
     
-    - name: Set up Python 3.8.2
-      uses: actions/setup-python@v2
+    - name: Set up Python 3.10.6
+      uses: actions/setup-python@v3
       with:
-        python-version: "3.8.2"
+        python-version: "3.10.6"
     - name: Install Go
       uses: actions/setup-go@v2
       with:
@@ -44,13 +44,13 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install flake8 pytest
         if [ -f requirements/dev.txt ]; then python3 -m pip install -r requirements/dev.txt; fi
-        python3 -m pip install otter-service
+        python3 -m pip install .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 150 chars wide
+        flake8 . --count --exit-zero --max-complexity=50 --max-line-length=150 --statistics
     - name: Test with pytest
       run: |
         python3 -m pytest
