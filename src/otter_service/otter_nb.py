@@ -11,8 +11,7 @@ from oauthlib.oauth1.rfc5849 import signature, parameters
 import pandas as pd
 import pytz
 from pytz import timezone
-from jupyterhub.services.auth import HubOAuthenticated, HubOAuthCallbackHandler
-from jupyterhub.utils import url_path_join
+from jupyterhub.services.auth import HubOAuthenticated
 from lxml import etree
 import aiohttp
 import async_timeout
@@ -22,7 +21,6 @@ import tornado.ioloop
 import tornado.escape
 import tornado.options
 import tornado.gen
-from tornado.web import authenticated
 from otter_service import access_sops_keys
 from otter_service.grade_assignment import grade_assignment
 import firebase_admin
@@ -177,9 +175,9 @@ async def post_grade(user_id, grade, course, section, assignment):
             'oauth_timestamp': str(time.time()),
             'oauth_nonce': str(time.time())
         }
-        base_string = signature.construct_base_string(
+        base_string = signature.signature_base_string(
             'POST',
-            signature.normalize_base_string_uri(outcomes_url),
+            outcomes_url,
             signature.normalize_parameters(
                 signature.collect_parameters(body=args, headers={})
             )
