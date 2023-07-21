@@ -8,7 +8,6 @@ from datetime import datetime
 import os
 from hashlib import sha1
 from oauthlib.oauth1.rfc5849 import signature, parameters
-import pandas as pd
 import pytz
 from pytz import timezone
 from jupyterhub.services.auth import HubOAuthenticated
