@@ -64,7 +64,7 @@ that the materials can be changed and the system not re-deployed
 
 #### Enhancements made
 
-- swapped otter grader to gofer-grader
+- swapped gofer-grader to otter-grader
 
 #### Bugs fixed
 
