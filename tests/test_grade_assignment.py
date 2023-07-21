@@ -27,9 +27,9 @@ def test_download_autograder_materials(configure):
 async def test_grade_assignment(configure):
     solutions_path = 'tests/test_files/autograder.zip'
     secrets_file = os.path.join(os.path.dirname(__file__), "test_files/gh_key.yaml")
-    grade = await ga.grade_assignment("tests/test_files/lab05.ipynb",
+    grade = await ga.grade_assignment("tests/test_files/lab01.ipynb",
                                       "1",
-                                      "lab05",
+                                      "lab01",
                                       solutions_path=solutions_path,
                                       sops_path="sops",
                                       secrets_file=secrets_file,
