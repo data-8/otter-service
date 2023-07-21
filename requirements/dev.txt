@@ -1,7 +1,7 @@
 -r prod.txt
-pytest
-pytest-async
-pytest-tornasync
-pytest-env
-build
-twine
+pytest==7.4.0
+pytest-env==0.8.2
+pytest-tornasync==0.6.0.post2
+pytest_async==0.1.1
+build==0.10.0
+twine==4.0.2

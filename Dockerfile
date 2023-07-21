@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ACCESS_TOKEN
 
@@ -13,6 +13,7 @@ RUN apt-get install -y python3 && \
     apt-get install -y curl && \
     apt-get install -y golang
 
+
 # install golang to support sops(python-sops does nto work with GCP KMS)
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
@@ -22,7 +23,7 @@ RUN python3 -m pip install -r /opt/otter-service/prod.txt
 RUN python3 -m pip install otter-service
 
 # install docker cli
-ENV DOCKER_VERSION 5:20.10.17~3-0~ubuntu-focal
+ENV DOCKER_VERSION 5:24.0.4-1~ubuntu.22.04~jammy
 RUN apt-get update
 RUN apt-get install \
     ca-certificates \
