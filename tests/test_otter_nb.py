@@ -7,9 +7,11 @@ import grpc
 from google.cloud.firestore_v1.client import firestore_client
 from google.cloud.firestore_v1.client import firestore_grpc_transport
 
+
 @pytest.fixture
 def app():
     return gn.start_server()
+
 
 @pytest.fixture
 def firebase_local():
@@ -19,6 +21,7 @@ def firebase_local():
     db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
     yield db
 
+
 @pytest.mark.skip(reason="test oauth2 now")
 async def test_http_client(http_server_client):
     resp = await http_server_client.fetch('/services/otter_grade/')
@@ -27,7 +30,7 @@ async def test_http_client(http_server_client):
 
 
 def test_write_grade(firebase_local):
-    grade_info = {"userid": "WRITE_TEST", "course":"8x-test", "grade": 88.0, "section": "1", "assignment": "lab99"}
+    grade_info = {"userid": "WRITE_TEST", "course": "8x-test", "grade": 88.0, "section": "1", "assignment": "lab99"}
     doc = gn.write_grade(grade_info)[1]
     doc_ref = firebase_local.collection(f'{os.environ.get("ENVIRONMENT")}-grades').document(f'{doc.id}')
     doc_obj = doc_ref.get()

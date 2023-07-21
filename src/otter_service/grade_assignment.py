@@ -40,11 +40,16 @@ def download_autograder_materials(url, save_path=None):
         raise Exception(f"Unable to access: {url}")
     return storage_path
 
+
 def remove_notebook():
     files = glob.glob('/tmp/*')
     for f in files:
         if not os.path.isdir(f):
-            os.remove(f)
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+
 
 async def grade_assignment(submission, sec='3', assignment='lab01', solutions_path=None, sops_path=None, secrets_file=None, save_path=None):
     """

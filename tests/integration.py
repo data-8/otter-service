@@ -1,5 +1,6 @@
 import json
 import requests
+import sys
 
 JUPYTERHUB_SERVICE_PREFIX = "/services/otter_grade/"
 server_map = {
@@ -27,8 +28,7 @@ def submit_test(map_item):
         print(response)
 
 
-import sys
 if sys.argv[1] == "keys":
-    print(*list(server_map.keys()), sep = "\n - ")
+    print(*list(server_map.keys()), sep="\n - ")
 else:
     submit_test(sys.argv[1])
