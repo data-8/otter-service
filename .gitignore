@@ -16,3 +16,4 @@ __pycache__
 firebase-*
 firestore-*
 ui-debug.log
+.vscode/launch.json

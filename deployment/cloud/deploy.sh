@@ -4,8 +4,6 @@ version=`sed -e 's/^"//' -e 's/"$//' <<<"$version"`
 branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
-github_key=$(sops -d src/otter_service/secrets/gh_key.yaml)
-github_key=${github_key##github_access_token: }
 
 JUPYTERHUB_BASE_URL=https://hubv2.data8x.berkeley.edu
 if [ "$branch_name" == "staging" ]; then
@@ -20,7 +18,7 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     
     yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
     # if breaks on Permission denied run: gcloud auth login
-    gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version --config ./deployment/cloud/cloudbuild.yaml
+    gcloud builds submit --substitutions=_TAG_NAME=$version --config ./deployment/cloud/cloudbuild.yaml
 fi
 
 export KUBECONFIG=./kube-context

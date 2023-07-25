@@ -25,9 +25,9 @@ spec:
               ephemeral-storage: 1Gi
               memory: 2Gi
             requests:
-              cpu: 200m
-              ephemeral-storage: 1Gi
-              memory: 1Gi
+              cpu: 400m
+              ephemeral-storage: 2Gi
+              memory: 4Gi
           ports:
             - containerPort: 10101
           volumeMounts:
@@ -55,9 +55,9 @@ spec:
               ephemeral-storage: 1Gi
               memory: 2Gi
             requests:
-              cpu: 200m
-              ephemeral-storage: 1Gi
-              memory: 1Gi
+              cpu: 400m
+              ephemeral-storage: 2Gi
+              memory: 4Gi
           volumeMounts:
             - name: opt-volume
               mountPath: /opt
