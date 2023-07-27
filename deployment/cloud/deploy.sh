@@ -45,6 +45,8 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
 #     #we ignore the checksum so that clear text values can be changes for deployments -- like POST_GRADE can can be made false
 #     #for testing and more
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
+    
+    yq -i ".spec.template.spec.containers[0].image = \"gcr.io/data8x-scratch/otter-srv:${version}\"" ./deployment/cloud/deployment.yaml 
     kubectl apply -f ./deployment/cloud/deployment.yaml
     
     kubectl set image deployment/otter-pod -n otter-$branch_name otter-srv=gcr.io/data8x-scratch/otter-srv:$version
