@@ -513,7 +513,7 @@ def start_server():
 
     server = tornado.httpserver.HTTPServer(app)
     server.listen(10101)
-
+    log_tornado_issues('Server started', "info")
     signal.signal(signal.SIGTERM, partial(sig_handler, server))
     signal.signal(signal.SIGINT, partial(sig_handler, server))
 
