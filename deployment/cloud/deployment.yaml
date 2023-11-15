@@ -17,7 +17,7 @@ spec:
       serviceAccountName: otter-k8-sa
       containers:
         - name: otter-srv
-          image: 'gcr.io/data8x-scratch/otter-srv:0.2.10'
+          image: 'gcr.io/data8x-scratch/otter-srv:0.2.12'
           imagePullPolicy: Always
           resources:
             limits:
