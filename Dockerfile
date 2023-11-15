@@ -1,6 +1,5 @@
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
-ARG GIT_ACCESS_TOKEN
 
 RUN apt-get update && \
     apt-get upgrade -y && \

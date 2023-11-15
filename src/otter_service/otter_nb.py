@@ -27,6 +27,8 @@ from firebase_admin import credentials, firestore
 import grpc
 from google.cloud.firestore_v1.client import firestore_client
 from google.cloud.firestore_v1.client import firestore_grpc_transport
+import otter_service.util as util
+
 
 PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/services/otter_grade/')
 
@@ -100,31 +102,32 @@ def create_sourced_id(course_id, assignment_id):
     return f"course-v1%3A{course_id}:{os.environ['EDX_URL']}-{assignment_id}"
 
 
-async def post_grade(user_id, grade, course, section, assignment):
+async def post_grade(solutions_base_path, metadata):
     """
     This posts the grade to the LTI server
-    :param user_id: the user to post the grade for
-    :param grade: the grade as a float
-    :param course: the course this notebook is in
-    :param section: the section this notebook is in
-    :param assignment:  the assignment name for this notebook
+    :paraem solutions_base_path: where the config file is to find the assignment id
+    :param metadata:
+        - userid: the user to post the grade for
+        - grade: the grade as a float
+        - course: the course this notebook is in
+        - section: the section this notebook is in
+        - assignment:  the assignment name for this notebook
     """
     body_hash = ""
     consumer_key = ""
     try:
         # post grade to EdX
-        with open(f'{os.environ["COURSE_CONFIG_PATH"]}', 'r', encoding="utf8") as filename:
-            # Course DEPENDENT configuration file
-            # Should contain page for hitting the gradebook (outcomes_url)
-            # as well as resource IDs for assignments
-            # e.g. sourcedid['3']['lab02'] = c09d043b662b4b4b96fceacb1f4aa1c9
-            # Make sure that it's placed in the working directory of the service (pwdx <PID>)
-            course_config = json.load(filename)
+        course_config = util.get_course_config(solutions_base_path)
+        course = metadata["course"]
+        section = metadata["section"]
+        assignment = metadata["assignment"]
+        user_id = metadata["userid"]
+        grade = metadata["grade"]
 
         course_id = course_config[course][section]["course_id"]
         assignment_id = course_config[course][section]["assignments"][assignment]
 
-        log_info_csv(user_id, course, section, assignment, f"Edx Course Config Loaded: Course Id: {course_id}, Assignment_id: {assignment_id}")
+        log_info_csv(user_id, metadata, f"Edx Course Config Loaded: Course Id: {course_id}, Assignment_id: {assignment_id}")
 
         sourced_id = create_sourced_id(course_id, assignment_id)
         outcomes_url = create_post_url(course_id, assignment_id)
@@ -158,8 +161,8 @@ async def post_grade(user_id, grade, course, section, assignment):
         </imsx_POXEnvelopeRequest>
         """
         secrets_file = os.path.join(os.path.dirname(__file__), "secrets/gke_key.yaml")
-        consumer_key = access_sops_keys.get("LTI_CONSUMER_KEY", secrets_file=secrets_file)
-        consumer_secret = access_sops_keys.get("LTI_CONSUMER_SECRET", secrets_file=secrets_file)
+        consumer_key = access_sops_keys.get(None, "LTI_CONSUMER_KEY", secrets_file=secrets_file)
+        consumer_secret = access_sops_keys.get(None, "LTI_CONSUMER_SECRET", secrets_file=secrets_file)
 
         sourced_id = f"{sourced_id}:{user_id}"
         post_data = post_xml.format(grade=float(grade), sourcedid=sourced_id)
@@ -204,7 +207,7 @@ async def post_grade(user_id, grade, course, section, assignment):
         code_major = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_codeMajor').text
         desc = status.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_description').text
 
-        log_info_csv(user_id, course, section, assignment, f"Posted to Edx: code: {code_major}, desc: {desc}")
+        log_info_csv(user_id, metadata, f"Posted to Edx: code: {code_major}, desc: {desc}")
 
         if code_major != 'success':
             raise GradePostException(desc)
@@ -235,17 +238,19 @@ class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
 
     # @authenticated
     async def post(self):
-        notebook = None
-        section = None
-        assignment = None
         user = {}
-        course = "not-set-yet"
+        metadata = {
+            "course": "not-set-yet",
+            "section": None,
+            "assignment": None
+        }
+        notebook = None
         timestamp = get_timestamp()
         using_test_user = False
         try:
             # Accept notebook submissions, saves, then grades them
             user = self.get_current_user()
-            log_info_csv("PRINT USER OBJ", course, section, assignment, str(user))
+            log_info_csv("PRINT USER OBJ", metadata, str(user))
             if user is None:
                 url_referer = self.request.headers.get("Referer")
                 if url_referer is None:
@@ -258,72 +263,77 @@ class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
             if 'nb' in req_data:
                 notebook = req_data['nb']
 
+            if "course" in notebook['metadata']:
+                metadata["course"] = notebook['metadata']['course']
+
             if "section" in notebook['metadata']:
-                section = notebook['metadata']['section']
+                metadata["section"] = notebook['metadata']['section']
 
             if "assignment" in notebook['metadata']:
-                assignment = notebook['metadata']['assignment']
-            elif "lab" in notebook['metadata']:
-                assignment = notebook['metadata']['lab']
+                metadata["assignment"] = notebook['metadata']['assignment']
 
-            if "course" in notebook['metadata']:
-                course = notebook['metadata']['course']
+            if metadata["course"] is None or \
+                metadata["section"] is None or \
+                    metadata["assignment"] is None:
+                err_msg = "Notebook does not have required metadata: course, section, and assignment"
+                raise GradeSubmissionException(err_msg)
 
-            if notebook is None or section is None or assignment is None:
-                raise GradeSubmissionException("Notebook does not have required metadata or maybe no notebook in post")
-
-            log_info_csv(user["name"], course, section, assignment, f"User logged in -  Using Referrer: {using_test_user}")
+            log_info_csv(user["name"], metadata, f"User logged in -  Using Referrer: {using_test_user}")
             # save notebook submission with user id and time stamp - this will be deleted
             sub_timestamp = timestamp.replace(" ", "-").replace(",", "-").replace(":", "-")
-            submission_file = f"/tmp/{user['name']}_{section}_{assignment}_{sub_timestamp}.ipynb"
+            submission_file = f"/tmp/{user['name']}_{metadata['course']}_{metadata['section']}_{metadata['assignment']}_{sub_timestamp}.ipynb"
             with open(submission_file, 'w', encoding="utf8") as outfile:
                 json.dump(notebook, outfile)
-            save_submission(user['name'], course, section, assignment, notebook)
-            log_info_csv(user["name"], course, section, assignment, "user submission saved to logs")
+            save_submission(user['name'], metadata, notebook)
+            log_info_csv(user["name"], metadata, "user submission saved to logs")
 
-            args = {}
-            args["course"] = course
-            args["section"] = section
-            args["assignments"] = assignment
-            args["name"] = user["name"]
-            args["submission_file"] = submission_file
-            args["timestamp"] = str(timestamp)
+            metadata["name"] = user["name"]
+            metadata["submission_file"] = submission_file
+            metadata["timestamp"] = str(timestamp)
 
-            tornado.ioloop.IOLoop.current().spawn_callback(self._grade_and_post, args)
+            tornado.ioloop.IOLoop.current().spawn_callback(self._grade_and_post, metadata)
 
             # Let user know their submission was received
             self.write("Your submission is being graded and will be posted to the gradebook once it is finished running!")
             self.finish()
         except GradeSubmissionException as grade_submission_exception:
             if notebook is None:
-                section = "No notebook was in the request body"
-                assignment = "No notebook was in the request body"
+                metadata["section"] = "No notebook was in the request body"
+                metadata["assignment"] = "No notebook was in the request body"
             else:
-                if section is None:
-                    section = "Section: problem getting section - not in notebook?"
-                if assignment is None:
-                    assignment = "Assignment: problem getting assignment - not in notebook?"
+                if metadata["section"] is None:
+                    metadata["section"] = "Section: problem getting section - not in notebook?"
+                if metadata["assignment"] is None:
+                    metadata["assignment"] = "Assignment: problem getting assignment - not in notebook?"
 
-            log_error_csv(user['name'], course, section, assignment, str(grade_submission_exception))
+            log_error_csv(user['name'], metadata, str(grade_submission_exception))
         except Exception as ex:  # pylint: disable=broad-except
-            log_error_csv(user, course, section, assignment, str(ex))
+            msg = ''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))
+            log_error_csv(user, metadata, msg)
 
     async def _grade_and_post(self, args):
         """
         This is called by spawn_callback method on the IOLoop to move the actual grading and
         posting of the grade out of the main thread.
 
-        :param args course, section, assignments, name, submission_file, timestamp coming from post method above
+        :param args
+            - course
+            - section
+            - assignment
+            - autograder_subpath
+            - name
+            - submission_file
+            - timestamp
         """
         course = args["course"]
         section = args["section"]
-        assignment = args["assignments"]
+        assignment = args["assignment"]
         name = args["name"]
         file_path = args["submission_file"]
         try:
             # Grade assignment
-            grade = await grade_assignment(file_path, section, assignment)
-            log_info_csv(name, course, section, assignment, f"Grade: {grade}")
+            grade, solutions_base_path = await grade_assignment(file_path, args)
+            log_info_csv(name, args, f"Grade: {grade}")
             # Write the grade to a Firestore
             grade_info = {
                 "userid": name,
@@ -333,17 +343,17 @@ class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
                 "assignment": assignment
             }
             write_grade(grade_info)
-            log_info_csv(name, course, section, assignment, f"Grade Written to database: {grade}")
+            log_info_csv(name, args, f"Grade Written to database: {grade}")
 
             if os.getenv("POST_GRADE").lower() in ("true", '1', 't'):
-                await post_grade(name, grade, course, section, assignment)
+                await post_grade(solutions_base_path, grade_info)
             else:
-                log_info_csv(name, course, section, assignment, f"Grade NOT posted to EdX on purpose: {grade}")
+                log_info_csv(name, args, f"Grade NOT posted to EdX on purpose: {grade}")
                 raise GradePostException("NOT POSTING Grades on purpose; see deployment-config-encrypted.yaml -- POST_GRADE")
         except GradePostException as gp:
-            log_error_csv(name, course, section, assignment, str(gp))
+            log_error_csv(name, args, str(gp))
         except Exception as ex:
-            log_error_csv(name, course, section, assignment, str(ex))
+            log_error_csv(name, args, str(ex))
         finally:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -359,7 +369,7 @@ def get_timestamp():
     return date.strftime(date_format)[:-3]
 
 
-def write_logs(username, course, section, assignment, msg, trace, type, collection):
+def write_logs(username, data, msg, trace, type, collection):
     if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
         try:
             db = firestore.client()
@@ -370,9 +380,9 @@ def write_logs(username, course, section, assignment, msg, trace, type, collecti
                 db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
             data = {
                 'user': username,
-                'course': course,
-                'section': section,
-                'assignment': assignment,
+                'course': data["course"],
+                'section': data["section"],
+                'assignment': data["assignment"],
                 'message': msg,
                 'trace': trace,
                 'type': type,
@@ -383,36 +393,38 @@ def write_logs(username, course, section, assignment, msg, trace, type, collecti
             raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 
-def log_info_csv(username, course, section, assignment, msg):
+def log_info_csv(username, data, msg):
     """
     This logs information in the chain of events -- user logs in and submits,
     graded, posted to Edx
 
     :param username: the username
-    :param course: the course
-    :param section: the section
-    :param assignment: the assignment
+    :param data: json struct of data
+        - course: the course
+        - section: the section
+        - assignment: the assignment
     :param msg: optional message to logs
     """
     try:
-        write_logs(username, course, section, assignment, msg, None, "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+        write_logs(username, data, msg, None, "info", f'{os.environ.get("ENVIRONMENT")}-logs')
     except Exception as e:
         raise e
 
 
-def log_error_csv(username, course, section, assignment, msg):
+def log_error_csv(username, data, msg):
     """
     This logs the errors occurring when posting assignments
 
     :param timestamp: when the error occurred
     :param username: the username
-    :param course: the course
-    :param section: the section
-    :param assignment: the assignment
+    :param data: json struct of data
+        - course: the course
+        - section: the section
+        - assignment: the assignment
     :param msg: optional message to logs
     """
     try:
-        write_logs(username, course, section, assignment, msg, str(traceback.format_exc()), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
+        write_logs(username, data, msg, str(traceback.format_exc()), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
     except Exception as e:
         raise e
 
@@ -438,22 +450,24 @@ def log_tornado_issues(msg, type):
         raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 
-def save_submission(username, course, section, assignment, notebook):
+def save_submission(username, data, notebook):
     """
     This logs the errors associated with tornado
 
-    :param msg: message about error
+    :param username: username
+    :param data: json struct of data
+        - course: the course
+        - section: the section
+        - assignment: the assignment
+        - autograder_materials_repo: the repo containing the autograder.zip
+        - autograder_subpath: the path in the repo to autograder.zip
+    :notebook: the cells in the notebook!
     """
     try:
         db = firestore.client()
-        data = {
-            'user': username,
-            'course': course,
-            'section': section,
-            'assignment': assignment,
-            'notebook': notebook,
-            'timestamp': get_timestamp()
-        }
+        data['user'] = username
+        data['notebook'] = notebook
+        data['timestamp'] = get_timestamp()
         return db.collection(f'{os.environ.get("ENVIRONMENT")}-submissions').add(data)
     except Exception as err:
         raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
@@ -499,7 +513,7 @@ def start_server():
 
     server = tornado.httpserver.HTTPServer(app)
     server.listen(10101)
-
+    log_tornado_issues('Server started', "info")
     signal.signal(signal.SIGTERM, partial(sig_handler, server))
     signal.signal(signal.SIGINT, partial(sig_handler, server))
 

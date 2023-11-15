@@ -4,12 +4,10 @@ version=`sed -e 's/^"//' -e 's/"$//' <<<"$version"`
 branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
-github_key=$(sops -d src/otter_service/secrets/gh_key.yaml)
-github_key=${github_key##github_access_token: }
 
-JUPYTERHUB_BASE_URL=https://hubv2.data8x.berkeley.edu
+JUPYTERHUB_BASE_URL=https://edx.datahub.berkeley.edu
 if [ "$branch_name" == "staging" ]; then
-    JUPYTERHUB_BASE_URL=https://hubv2-staging.data8x.berkeley.edu
+    JUPYTERHUB_BASE_URL=https://edx-staging.datahub.berkeley.edu
 fi
 JUPYTERHUB_API_URL="$JUPYTERHUB_BASE_URL/hub/api"
 
@@ -20,7 +18,7 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     
     yq eval ".services.app.build.args.OTTER_SERVICE_VERSION=\"$version\"" -i docker-compose.yml
     # if breaks on Permission denied run: gcloud auth login
-    gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version --config ./deployment/cloud/cloudbuild.yaml
+    gcloud builds submit --substitutions=_TAG_NAME=$version --config ./deployment/cloud/cloudbuild.yaml
 fi
 
 export KUBECONFIG=./kube-context
@@ -47,6 +45,8 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
 #     #we ignore the checksum so that clear text values can be changes for deployments -- like POST_GRADE can can be made false
 #     #for testing and more
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
+    
+    yq -i ".spec.template.spec.containers[0].image = \"gcr.io/data8x-scratch/otter-srv:${version}\"" ./deployment/cloud/deployment.yaml 
     kubectl apply -f ./deployment/cloud/deployment.yaml
     
     kubectl set image deployment/otter-pod -n otter-$branch_name otter-srv=gcr.io/data8x-scratch/otter-srv:$version

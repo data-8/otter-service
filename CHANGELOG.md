@@ -1,3 +1,11 @@
+## 0.2.10
+
+#### Enhancements made
+
+- otter-service handles any course from edx with appropriate config
+- changes to how secrets are stored
+- updates to logging
+
 ## 0.2.4
 
 #### Enhancements made
