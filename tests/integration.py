@@ -8,11 +8,11 @@ server_map = {
     "staging-lb": f"http://35.193.0.244:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "dev-lb": f"http://34.134.165.169:10101{JUPYTERHUB_SERVICE_PREFIX}",
     "prod-lb": f"http://35.224.71.117:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "staging-dns": f"http://grader-staging.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "prod-dns": f"http://grader-prod.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "dev-dns": f"http://grader-dev.data8x.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
-    "staging-hub": f"https://hubv2-staging.data8x.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}",
-    "prod-hub": f"https://hubv2.data8x.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}"
+    "staging-dns": f"http://grader-srv-staging.datahub.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "prod-dns": f"http://grader-srv.datahub.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "dev-dns": f"http://grader-srv-dev.datahub.berkeley.edu:10101{JUPYTERHUB_SERVICE_PREFIX}",
+    "staging-hub": f"https://edx-staging.datahub.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}",
+    "prod-hub": f"https://edx.datahub.berkeley.edu{JUPYTERHUB_SERVICE_PREFIX}"
 }
 
 

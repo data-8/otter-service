@@ -5,9 +5,9 @@ branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
 
-JUPYTERHUB_BASE_URL=https://hubv2.data8x.berkeley.edu
+JUPYTERHUB_BASE_URL=https://edx.datahub.berkeley.edu
 if [ "$branch_name" == "staging" ]; then
-    JUPYTERHUB_BASE_URL=https://hubv2-staging.data8x.berkeley.edu
+    JUPYTERHUB_BASE_URL=https://edx-staging.datahub.berkeley.edu
 fi
 JUPYTERHUB_API_URL="$JUPYTERHUB_BASE_URL/hub/api"
 
