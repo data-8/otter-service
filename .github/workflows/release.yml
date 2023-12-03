@@ -13,16 +13,13 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-        contents: 'read'
-        id-token: 'write'
     steps:
       - name: Set up Python 3.x
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
       - name: Build changelog
         id: build_changelog
         uses: mikepenz/release-changelog-builder-action@main
@@ -32,7 +29,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         id: create_release
-        uses: actions/create-release@latest
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
         with:
