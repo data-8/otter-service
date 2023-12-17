@@ -94,7 +94,7 @@ async def grade_assignment(submission,
 
         autograder_subpath = course_config[args["course"]][args["section"]]["subpath_to_zips"]
 
-        solutions_path = f'{solutions_base_path}/{autograder_subpath}/{args["assignment"]}/autograder.zip'
+        solutions_path = f'{solutions_base_path}/{autograder_subpath}/{args["assignment"]}-autograder.zip'
 
         command = [
             'otter', 'grade',
