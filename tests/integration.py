@@ -16,19 +16,27 @@ server_map = {
 }
 
 
-def submit_test(map_item):
+def submit_test(args):
+    map_item = args[1]
+    test = args[2]
+    test_file = "lab01.ipynb"
+    if test == "88e":
+        test_file = "lab01-88e.ipynb"
+
     # I use this file to test from the shell
-    with open("tests/test_files/lab01.ipynb", 'r', encoding="utf-8") as myfile:
+    with open(f"tests/test_files/{test_file}", 'r', encoding="utf-8") as myfile:
         data = myfile.read()
 
     data = json.loads(data)
     js = {'nb': data}
-    for x in range(1):
-        response = requests.post(server_map[map_item], data=json.dumps(js))
-        print(response)
+    response = requests.post(server_map[map_item], data=json.dumps(js))
+    print(response)
 
 
+# sample usage
+# integration.py dev-lb 88e
+# integration.py dev-lb 8x
 if sys.argv[1] == "keys":
     print(*list(server_map.keys()), sep="\n - ")
 else:
-    submit_test(sys.argv[1])
+    submit_test(sys.argv)
