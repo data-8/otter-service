@@ -11,13 +11,15 @@ All grades are written to gcloud Cloud FireStore. During local testing with pyte
 # Configuration
 
 ## Notebook(ipynb metadata)
-The ipynb notebooks need to include the metadata for which assignment they are. In the case of Data 8x, there are three pieces of information that are relevant: the course name, section and lab. These values correspond to the course-config.json file described in the section below. These are set in the metadata section of every notebook:
+The ipynb notebooks need to include the metadata for which assignment they are. There are three pieces of information that are relevant: the course name, section and lab. They should be nested in an "otter_service" attribute as shown below. These values correspond to the course-config.json file described in the section below. These are set in the metadata section of every notebook:
 ```
 metadata:{
+  "otter_service": {
     "course": "8x",
     "section": "1",
     "assignment": "lab01"
-    ...
+  }
+  ...
 }
 ```
 
