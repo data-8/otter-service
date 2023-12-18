@@ -263,19 +263,24 @@ class OtterHandler(HubOAuthenticated, tornado.web.RequestHandler):
             if 'nb' in req_data:
                 notebook = req_data['nb']
 
-            if "course" in notebook['metadata']:
-                metadata["course"] = notebook['metadata']['course']
+            otter_check = "otter_service" in notebook['metadata']
+            if otter_check and "course" in notebook['metadata']["otter_service"]:
+                metadata["course"] = notebook['metadata']["otter_service"]['course']
 
-            if "section" in notebook['metadata']:
-                metadata["section"] = notebook['metadata']['section']
+            if otter_check and "section" in notebook['metadata']["otter_service"]:
+                metadata["section"] = notebook['metadata']["otter_service"]['section']
 
-            if "assignment" in notebook['metadata']:
-                metadata["assignment"] = notebook['metadata']['assignment']
+            if otter_check and "assignment" in notebook['metadata']["otter_service"]:
+                metadata["assignment"] = notebook['metadata']["otter_service"]['assignment']
+
+            if not otter_check:
+                err_msg = "Notebook does not have required \"otter_service\" attribute in metadata"
+                raise GradeSubmissionException(err_msg)
 
             if metadata["course"] is None or \
                 metadata["section"] is None or \
                     metadata["assignment"] is None:
-                err_msg = "Notebook does not have required metadata: course, section, and assignment"
+                err_msg = "Notebook does not have required metadata in otter_service attribute: course, section, and assignment"
                 raise GradeSubmissionException(err_msg)
 
             log_info_csv(user["name"], metadata, f"User logged in -  Using Referrer: {using_test_user}")
