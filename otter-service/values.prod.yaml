@@ -1,0 +1,15 @@
+branch: prod
+service:
+  load_balancer_ip: 35.224.71.117
+otter_srv:
+  envFrom:
+    - configMapRef:
+        name: otter-env-prod
+otter_env:
+  parameters:
+    environment: otter-prod
+    jh_api_url: https://edx.datahub.berkeley.edu/hub/api
+    jh_base_url: https://edx.datahub.berkeley.edu
+    post_grade: "True"
+volume_claims:
+  create: false

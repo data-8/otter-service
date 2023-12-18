@@ -1,0 +1,15 @@
+branch: staging
+service:
+  load_balancer_ip: 35.193.0.244
+otter_srv:
+  envFrom:
+    - configMapRef:
+        name: otter-env-staging
+otter_env:
+  parameters:
+    environment: otter-staging
+    jh_api_url: https://edx-staging.datahub.berkeley.edu/hub/api
+    jh_base_url: https://edx-staging.datahub.berkeley.edu
+    post_grade: "True"
+volume_claims:
+  create: false
