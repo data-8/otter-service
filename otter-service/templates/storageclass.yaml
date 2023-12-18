@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sc-{{ .Values.storageClass.name }}-{{ .Values.branch }}
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: {{ .Values.storageClass.type }}
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topology.kubernetes.io/zone
+    values:
+    - us-central1-a
