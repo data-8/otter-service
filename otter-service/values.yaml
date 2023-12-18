@@ -1,0 +1,118 @@
+# Default values for otter-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 1
+updateStrategy: RollingUpdate
+nameOverride: otter-srv
+fullnameOverride: otter-pod
+otter_srv:
+    name: otter-srv
+    repository: gcr.io/data8x-scratch/otter-srv
+    pullPolicy: Always
+    tag: latest
+    resources:
+        limits:
+            cpu: 500m
+            ephemeral-storage: 1Gi
+            memory: 2Gi
+        requests:
+            cpu: 500m
+            ephemeral-storage: 1Gi
+            memory: 1Gi
+    ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+    volumeMounts:
+        - name: opt-volume
+          mountPath: /opt
+        - name: tmp-volume
+          mountPath: /tmp
+    env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+        - name: DOCKER_CLI_EXPERIMENTAL
+          value: enabled
+dind_image:
+    name: otter-dind
+    repository: docker
+    tag: 20-dind
+    args:
+        - --tls=false
+    imagePullPolicy: Always
+    securityContext:
+        privileged: true
+    resources:
+        limits:
+            cpu: 2500m
+            ephemeral-storage: 1Gi
+            memory: 8Gi
+        requests:
+            cpu: 2500m
+            ephemeral-storage: 1Gi
+            memory: 5Gi
+    volumeMounts:
+        - name: opt-volume
+          mountPath: /opt
+        - name: tmp-volume
+          mountPath: /tmp
+    env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+serviceAccount:
+    create: true
+    annotations:
+        iam.gke.io/gcp-service-account: otter-sa@data8x-scratch.iam.gserviceaccount.com
+    name: otter-k8-sa
+storageClass:
+    create: true
+    name: otter-srv-storage-class
+    accessModes: ReadWriteOnce
+    storageRequest: 1Gi
+    type: pd-standard
+volume_claims:
+    names:
+        - otter-opt-volume-claim
+        - otter-tmp-volume-claim
+otter_env:
+    name: otter-env
+    parameters:
+        verbose_logging: "True"
+        gcp_project_id: data8x-scratch
+        post_grade: "True"
+        edx_url: courses.edx.org
+        jh_api_token: ENC[AES256_GCM,data:jNt2gyIkyY3/0sbYmVX1JrJ0LncV2PnooHLjnoaCZqgPGA041pAnEmRA3UUYR1RuRipHjA3gAlHGRuTlH0qonA==,iv:8tlFvEIw42z4HeBQf4BzDwrd7wMwNA9F3pHDir6pLcM=,tag:BCqwaUQ3orzkz9bxTIXjnA==,type:str]
+        jh_client_id: service-otter_grade
+        jh_service_prefix: /services/otter_grade/
+        jh_service_name: otter_grade
+        test_user: 594aed203b01b16a7a025c2f3e037933
+service:
+    name: otter-lb
+    enabled: true
+    type: LoadBalancer
+    port: 10101
+    targetPort: 10101
+autoscaling:
+    apiVersion: autoscaling/v1
+    enabled: true
+    scaleTargetRef:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: otter-pod
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 80
+sops:
+    kms: []
+    gcp_kms:
+        - resource_id: projects/data8x-scratch/locations/global/keyRings/data8x-sops/cryptoKeys/otter-service
+          created_at: "2023-12-18T22:11:59Z"
+          enc: CiQA+mtdj1JKlJM+8AYsVi4TJ4D6DUgg6Kw8LCYVyd2pdkI6YJASSQAeeyex0dnXY+zXhOMRKQx77zk3AAvWJoO8oJcFbmm9VXYZceiH+0k86LMz3aXRlf6b+FeYxYVFhpeWiIXzwJObF1+Pe56o95g=
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2023-12-18T22:12:00Z"
+    mac: ENC[AES256_GCM,data:G1pBB39uTDAZwqwEcBR0KtRyNEnMGLATSwUFxQMK7SLMyP++t1QUTwbfT6AZRvaENlIDTuZkUI5P4hfNEmpenHUZm12VdrDRsfvj0C++gPkK4HHCP8+/5moyZcyj2Jn3QPT7t/VBHlgm5kJ9bch2spQlMy7pPvfeMWvyvQN+C2Q=,iv:BGr/VAuP4D/W2xClCOt6bjd0egd/jegW9BfIgvFNOHw=,tag:lVaLOg/4kqwq6d9emwjGTg==,type:str]
+    pgp: []
+    encrypted_regex: jh_api_token
+    version: 3.7.1
