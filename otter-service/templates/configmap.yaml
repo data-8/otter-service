@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.otter_env.name }}-{{ .Values.branch }}
+data:
+  ENVIRONMENT: {{ .Values.otter_env.parameters.environment }}
+  VERBOSE_LOGGING: "{{ .Values.otter_env.parameters.verbose_logging }}"
+  GCP_PROJECT_ID: {{ .Values.otter_env.parameters.gcp_project_id }}
+  POST_GRADE: "{{ .Values.otter_env.parameters.post_grade }}"
+  EDX_URL: {{ .Values.otter_env.parameters.edx_url }}
+  JUPYTERHUB_API_URL: {{ .Values.otter_env.parameters.jh_api_url }}
+  JUPYTERHUB_BASE_URL: {{ .Values.otter_env.parameters.jh_base_url }}
+  JUPYTERHUB_API_TOKEN: {{ .Values.otter_env.parameters.jh_api_token }}
+  JUPYTERHUB_CLIENT_ID: {{ .Values.otter_env.parameters.jh_client_id }}
+  JUPYTERHUB_SERVICE_PREFIX: {{ .Values.otter_env.parameters.jh_service_prefix }}
+  JUPYTERHUB_SERVICE_NAME: {{ .Values.otter_env.parameters.jh_service_name }}
+  TEST_USER: {{ .Values.otter_env.parameters.test_user }}

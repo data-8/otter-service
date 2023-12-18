@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "otter-service.fullname" . }}
+  labels:
+    {{- include "otter-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.updateStrategy }}
+    rollingUpdate:
+         maxSurge: 0
+         maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "otter-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        {{- include "otter-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "otter-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.dind_image.name }}
+          securityContext:
+            {{- toYaml .Values.dind_image.securityContext | nindent 12 }}
+          image: "{{ .Values.dind_image.repository }}:{{ .Values.dind_image.tag | default .Chart.AppVersion }}"
+          args: {{ .Values.dind_image.args }}
+          imagePullPolicy: {{ .Values.dind_image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.dind_image.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.dind_image.volumeMounts | nindent 12 }}
+          env:
+            {{- toYaml .Values.dind_image.env | nindent 12 }}
+        - name: {{ .Values.otter_srv.name }}
+          image: "{{ .Values.otter_srv.repository }}:{{ .Values.otter_srv.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.otter_srv.pullPolicy }}
+          ports:
+            {{- toYaml .Values.otter_srv.ports | nindent 12 }}
+          resources:
+            {{- toYaml .Values.otter_srv.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.otter_srv.volumeMounts | nindent 12 }}
+          env:
+            {{- toYaml .Values.otter_srv.env | nindent 12 }}
+          envFrom:
+            {{- toYaml .Values.otter_srv.envFrom | nindent 12 }}
+        
+      volumes:
+        - name: opt-volume
+          persistentVolumeClaim:
+            claimName: {{ index .Values.volume_claims.names 0 }}
+        - name: tmp-volume
+          persistentVolumeClaim:
+            claimName: {{ index .Values.volume_claims.names 1 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
