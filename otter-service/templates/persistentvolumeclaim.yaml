@@ -1,0 +1,21 @@
+{{- if .Values.volume_claims.create -}}
+{{- $scName := .Values.storageClass.name -}}
+{{- $accessMode := .Values.storageClass.accessModes -}}
+{{- $storageRequest := .Values.storageClass.storageRequest -}}
+{{- $branch := .Values.branch -}}
+{{ range .Values.volume_claims.names }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ . }}  
+spec:
+  accessModes: 
+    - {{ $accessMode }}
+  volumeMode: Filesystem
+  storageClassName: sc-{{ $scName }}-{{ $branch }}
+  resources:
+    requests:
+      storage: {{ $storageRequest }}
+{{ end }}
+{{ end }}

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "otter-service.fullname" . }}
+  labels:
+    {{- include "otter-service.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  loadBalancerIP: {{ .Values.service.load_balancer_ip }}
+  selector:
+    {{- include "otter-service.selectorLabels" . | nindent 4 }}
