@@ -12,4 +12,4 @@ otter_env:
     jh_base_url: https://edx-staging.datahub.berkeley.edu
     post_grade: "True"
 volume_claims:
-  create: false
+  create: true
