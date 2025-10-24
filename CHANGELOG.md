@@ -1,3 +1,9 @@
+## 2.0.4
+
+#### Enhancements made
+
+- Added 88be config
+
 ## 2.0.3
 
 #### Enhancements made
