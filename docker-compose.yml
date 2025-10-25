@@ -17,7 +17,7 @@ services:
       context: .
       dockerfile: Dockerfile-dev
       args:
-        OTTER_SERVICE_VERSION: "2.0.3"
+        OTTER_SERVICE_VERSION: "2.0.4"
         BUILD_VERSION: local
     env_file:
       - ../.local-env
