@@ -54,8 +54,8 @@ def download_autograder_materials(course, sops_path, secrets_file, save_path=Non
     return storage_path
 
 
-def remove_notebook():
-    files = glob.glob('/tmp/*')
+def remove_notebook(submission):
+    files = glob.glob(f'{submission}')
     for f in files:
         if not os.path.isdir(f):
             try:
@@ -133,4 +133,4 @@ async def grade_assignment(submission,
     except Exception as e:
         raise e
     finally:
-        remove_notebook()
+        remove_notebook(submission)
