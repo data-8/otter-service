@@ -1,6 +1,6 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'build', '-t', 'gcr.io/data8x-scratch/otter-srv:$_TAG_NAME', '-t', 'gcr.io/data8x-scratch/otter-srv', '.' ]
+    args: [ 'build', '--build-arg', 'OTTER_SERVICE_VERSION=$_TAG_NAME', '-t', 'gcr.io/data8x-scratch/otter-srv:$_TAG_NAME', '-t', 'gcr.io/data8x-scratch/otter-srv', '.' ]
   # push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/data8x-scratch/otter-srv']

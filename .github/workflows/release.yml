@@ -3,23 +3,18 @@ name: Release
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+' # Push events to any matching semantic tag. For example, 1.10.1 or 2.0.0.
-env:
-  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: otter-cluster 
-  GKE_ZONE: us-central1
-  DEPLOYMENT_NAME: otter-pod
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
       - name: Build changelog
         id: build_changelog
         uses: mikepenz/release-changelog-builder-action@main
@@ -27,86 +22,45 @@ jobs:
           configuration: 'release-changelog-builder-config.json'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create release
-        id: create_release
+
+      - name: Create GitHub release
         uses: actions/create-release@latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
-          body: ${{steps.build_changelog.outputs.changelog}}
+          body: ${{ steps.build_changelog.outputs.changelog }}
           draft: false
           prerelease: false
-      - name: Build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build package
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install build
+          pip install build
           python3 -m build
-      - name: Publish a Python distribution to PyPI
+
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          password: ${{ secrets.PYPI_TOKEN }}
 
-  setup-and-deploy:
-      needs: release
-      name: Setup and Deploy
-      runs-on: ubuntu-latest
-
-      # Add "id-token" with the intended permissions.
-      permissions:
-        contents: 'read'
-        id-token: 'write'
-
-      steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      #Configure Workload Identity Federation and generate an access token. This is the preferred method but sops
-      #does not us Oauth2 -- apparently is v3.7.3 it will be integrated
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v0'
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/otter-pool/providers/github-actions'
           service_account: 'otter-sa@data8x-scratch.iam.gserviceaccount.com'
 
-      # - id: 'auth'
-      #   name: 'Authenticate to Google Cloud - JSON'
-      #   uses: 'google-github-actions/auth@v0'
-      #   with:
-      #     credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-
-      # Setup gcloud CLI
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0
+        uses: google-github-actions/setup-gcloud@v2
 
-      # # Get the GKE credentials so we can deploy to the cluster
-      - run: |-
-          gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '^1.13.1' # The Go version to download (if necessary) and use.
-      
-      - name: Install sops
-        run: go install go.mozilla.org/sops/v3/cmd/sops@v3.7.2
-
-      # # Build image 
-      - name: Build image
-        run: |-
-          github_key=$(sops -d src/otter_service/secrets/gh_key.yaml)
-          github_key=${github_key##github_access_token: }  
-          gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=${{ github.ref_name }}  --config ./deployment/cloud/cloudbuild.yaml
-      
-      # Deploy image to the GKE cluster
-      - name: Deploy
-        run: |-
-          kubectl set image deployment/$DEPLOYMENT_NAME -n otter-dev otter-srv=gcr.io/data8x-scratch/otter-srv:${{ github.ref_name }} --record
-          kubectl get services -o wide
-          kubectl rollout status deployment/$DEPLOYMENT_NAME -n otter-dev
+      - name: Build and push Docker image
+        run: |
+          gcloud builds submit \
+            --substitutions=_TAG_NAME=${{ github.ref_name }} \
+            --config ./cloudbuild.yaml

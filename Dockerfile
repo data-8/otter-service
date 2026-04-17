@@ -1,5 +1,6 @@
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
+ARG OTTER_SERVICE_VERSION
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -19,7 +20,7 @@ RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
 
 COPY ./requirements/prod.txt /opt/otter-service/prod.txt
 RUN python3 -m pip install -r /opt/otter-service/prod.txt
-RUN python3 -m pip install otter-service
+RUN python3 -m pip install otter-service==${OTTER_SERVICE_VERSION}
 
 # install docker cli
 ENV DOCKER_VERSION 5:24.0.4-1~ubuntu.22.04~jammy
