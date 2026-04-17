@@ -17,9 +17,8 @@ RUN apt-get install -y python3 && \
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
-ADD ./requirements/prod.txt /opt/otter-service/prod.txt
-ADD ./requirements/dev.txt /opt/otter-service/dev.txt
-RUN python3 -m pip install -r /opt/otter-service/dev.txt
+ADD ./requirements/requirements.txt /opt/otter-service/requirements.txt
+RUN python3 -m pip install -r /opt/otter-service/requirements.txt
 
 
 COPY ./dist/otter_service-${OTTER_SERVICE_VERSION}.tar.gz /opt/otter-service/

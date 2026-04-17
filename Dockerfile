@@ -18,8 +18,8 @@ RUN apt-get install -y python3 && \
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
-COPY ./requirements/prod.txt /opt/otter-service/prod.txt
-RUN python3 -m pip install -r /opt/otter-service/prod.txt
+COPY ./requirements/requirements.txt /opt/otter-service/requirements.txt
+RUN python3 -m pip install -r /opt/otter-service/requirements.txt
 RUN python3 -m pip install otter-service==${OTTER_SERVICE_VERSION}
 
 # install docker cli

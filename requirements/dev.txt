@@ -1,4 +1,0 @@
--r prod.txt
-pytest
-build
-twine

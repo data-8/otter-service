@@ -1,6 +1,3 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
 name: Python application
 
 on:
@@ -8,49 +5,44 @@ on:
     branches: [ main ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write
     steps:
-    - uses: actions/checkout@v3
-    - id: 'auth'
-      uses: 'google-github-actions/auth@v0'
-      with:
-        workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/otter-pool/providers/github-actions'
-        service_account: 'otter-sa@data8x-scratch.iam.gserviceaccount.com'
+      - uses: actions/checkout@v4
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v0'
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/otter-pool/providers/github-actions'
+          service_account: 'otter-sa@data8x-scratch.iam.gserviceaccount.com'
 
-    - name: 'Use gcloud CLI'
-      run: 'gcloud info'
-    
-    - name: Set up Python 3.10.6
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10.6"
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.13.1' # The Go version to download (if necessary) and use.
-    - name: Install sops
-      run: go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
-    - name: Install dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install flake8 pytest
-        if [ -f requirements/dev.txt ]; then python3 -m pip install -r requirements/dev.txt; fi
-        python3 -m pip install .
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 150 chars wide
-        flake8 . --count --exit-zero --max-complexity=50 --max-line-length=150 --statistics
-    - name: Test with pytest
-      run: |
-        python3 -m pytest
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sops
+        run: |
+          curl -Lo /usr/local/bin/sops https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64
+          chmod +x /usr/local/bin/sops
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flake8 pytest pytest-asyncio pytest-env
+          pip install -r requirements/requirements.txt
+          pip install .
+
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=50 --max-line-length=150 --statistics
+
+      - name: Test with pytest
+        run: pytest
