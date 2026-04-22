@@ -14,12 +14,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Authenticate to GCP
+        if: github.event.pull_request.head.repo.full_name == github.repository
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/otter-pool/providers/github-actions'
           service_account: 'otter-sa@data8x-scratch.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
+        if: github.event.pull_request.head.repo.full_name == github.repository
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Set up Python
@@ -28,6 +30,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install sops
+        if: github.event.pull_request.head.repo.full_name == github.repository
         run: |
           curl -Lo /usr/local/bin/sops https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64
           chmod +x /usr/local/bin/sops
@@ -45,4 +48,5 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=50 --max-line-length=150 --statistics
 
       - name: Test with pytest
+        if: github.event.pull_request.head.repo.full_name == github.repository
         run: pytest
