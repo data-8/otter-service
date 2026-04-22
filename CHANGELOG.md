@@ -1,3 +1,10 @@
+## 2.0.7
+
+#### Enhancements made
+
+- The autograder Configs are all updated
+- GH Workflow is more efficient
+
 ## 2.0.4
 
 #### Enhancements made
