@@ -20,7 +20,12 @@ RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
 
 COPY ./requirements/requirements.txt /opt/otter-service/requirements.txt
 RUN python3 -m pip install -r /opt/otter-service/requirements.txt
-RUN python3 -m pip install otter-service==${OTTER_SERVICE_VERSION}
+COPY . /opt/otter-service-src/
+RUN if [ -n "${OTTER_SERVICE_VERSION}" ]; then \
+      python3 -m pip install otter-service==${OTTER_SERVICE_VERSION}; \
+    else \
+      python3 -m pip install /opt/otter-service-src/; \
+    fi
 
 # install docker cli
 ENV DOCKER_VERSION 5:24.0.4-1~ubuntu.22.04~jammy

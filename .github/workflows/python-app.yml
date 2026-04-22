@@ -3,42 +3,29 @@ name: Python application
 on:
   pull_request:
     branches: [ main ]
+  pull_request_target:
+    branches: [ main ]
 
 jobs:
-  build:
+  lint-and-build:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Authenticate to GCP
-        if: github.event.pull_request.head.repo.full_name == github.repository
-        uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/otter-pool/providers/github-actions'
-          service_account: 'otter-sa@data8x-scratch.iam.gserviceaccount.com'
-
-      - name: Set up Cloud SDK
-        if: github.event.pull_request.head.repo.full_name == github.repository
-        uses: google-github-actions/setup-gcloud@v2
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install sops
-        if: github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          curl -Lo /usr/local/bin/sops https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64
-          chmod +x /usr/local/bin/sops
-
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install flake8 pytest pytest-asyncio pytest-env
+          pip install flake8
           pip install -r requirements/requirements.txt
           pip install .
 
@@ -47,6 +34,58 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=50 --max-line-length=150 --statistics
 
+      - name: Validate Docker build
+        run: docker build -t otter-srv:pr .
+
+  test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+    environment: otter-service
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/75088546496/locations/global/workloadIdentityPools/otter-pool/providers/github-actions'
+          service_account: 'otter-sa@data8x-scratch.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sops
+        run: |
+          curl -Lo /usr/local/bin/sops https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64
+          chmod +x /usr/local/bin/sops
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-env
+          pip install -r requirements/requirements.txt
+          pip install .
+
       - name: Test with pytest
-        if: github.event.pull_request.head.repo.full_name == github.repository
         run: pytest
+
+      - name: Remind to tag after merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ All checks passed! After merging, remember to bump the version, update CHANGELOG, then tag and push to trigger a release:\n```\ngit tag X.Y.Z\ngit push upstream X.Y.Z\n```'
+            })
