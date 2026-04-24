@@ -73,10 +73,13 @@ def download_autograder_materials(course, sops_path, secrets_file, save_path=Non
         with open(download_path, 'wb') as f:
             f.write(r.raw.read())
         file = tarfile.open(download_path)
+        # The top-level directory name inside the tarball varies by download method.
+        # Read it directly from the archive rather than assuming a naming convention.
+        top_level = {m.name.split("/")[0] for m in file.getmembers() if "/" in m.name}
         file.extractall(save_path)
         file.close()
         file_name = autograder_materials_repo.split("/")[-1]
-        extracted_path = f"{save_path}/{file_name}-{branch}"
+        extracted_path = os.path.join(save_path, top_level.pop()) if top_level else f"{save_path}/{file_name}-{branch}"
         storage_path = f"{save_path}/{file_name}"
         if os.path.isdir(storage_path):
             shutil.rmtree(storage_path)
