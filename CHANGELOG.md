@@ -1,3 +1,10 @@
+## 2.0.12
+
+#### Bug fixes
+
+- Fix GitHub App archive download: switch from `x-access-token` embedded in git URL (unsupported for App tokens) to `api.github.com/repos/{repo}/tarball/{branch}` with `Authorization` header
+- Detect extracted tarball directory name from archive members instead of assuming `{repo}-{branch}` format (API tarballs extract as `{owner}-{repo}-{sha}`)
+
 ## 2.0.11
 
 #### Enhancements made
