@@ -1,7 +1,9 @@
 import asyncio
 import async_timeout
+import jwt
 import requests
 import tarfile
+import time
 import os
 import glob
 from otter_service import access_sops_keys
@@ -9,20 +11,46 @@ import shutil
 import otter_service.util as util
 
 
+def get_github_app_token(app_id, private_key_pem, installation_id):
+    """
+    Exchange GitHub App credentials for a short-lived installation access token.
+    """
+    now = int(time.time())
+    payload = {
+        "iat": now - 60,
+        "exp": now + 600,
+        "iss": str(app_id),
+    }
+    encoded_jwt = jwt.encode(payload, private_key_pem, algorithm="RS256")
+    resp = requests.post(
+        f"https://api.github.com/app/installations/{installation_id}/access_tokens",
+        headers={
+            "Authorization": f"Bearer {encoded_jwt}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+    )
+    resp.raise_for_status()
+    return resp.json()["token"]
+
+
 def download_autograder_materials(course, sops_path, secrets_file, save_path=None):
     """
     This function downloads the appropriate archive of autograder materials be used for testing. The archive
     must be on the main branch(but it will also try the master branch if main fails)
 
-    :param course: key to git access token in secrets file
+    :param course: key to autograder_repo in secrets file
     :param sops_path: path to sops executable
     :param secrets_file: path to secrets file
     :param save_path: Where to save the archive -- for testing it is "." for normal it will /tmp
     """
     branch = "main"
-    git_access_token = access_sops_keys.get(course, "github_access_token", sops_path=sops_path, secrets_file=secrets_file)
+    app_id = access_sops_keys.get(None, "github_app_id", sops_path=sops_path, secrets_file=secrets_file)
+    private_key = access_sops_keys.get(None, "github_app_private_key", sops_path=sops_path, secrets_file=secrets_file)
+    installation_id = access_sops_keys.get(None, "github_app_installation_id", sops_path=sops_path, secrets_file=secrets_file)
+    git_access_token = get_github_app_token(app_id, private_key, installation_id)
     autograder_materials_repo = access_sops_keys.get(course, "autograder_repo", sops_path=sops_path, secrets_file=secrets_file)
-    materials_url = f"https://{git_access_token}:@{autograder_materials_repo}/archive/{branch}.tar.gz"
+    materials_url = f"https://x-access-token:{git_access_token}@{autograder_materials_repo}/archive/{branch}.tar.gz"
 
     download_path = "/tmp/materials.tar.gz"
     if save_path is None:
@@ -31,7 +59,7 @@ def download_autograder_materials(course, sops_path, secrets_file, save_path=Non
     r = requests.get(materials_url, stream=True)
     if r.status_code != 200:
         branch = "master"
-        materials_url = f"https://{git_access_token}:@{autograder_materials_repo}/archive/{branch}.tar.gz"
+        materials_url = f"https://x-access-token:{git_access_token}@{autograder_materials_repo}/archive/{branch}.tar.gz"
         r = requests.get(materials_url, stream=True)
 
     if r.status_code == 200:
