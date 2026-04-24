@@ -1,3 +1,9 @@
+## 2.0.10
+
+#### Enhancements made
+
+- Switch Autograder copy to GH App
+
 ## 2.0.9
 
 #### Enhancements made
