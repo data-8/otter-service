@@ -1,4 +1,5 @@
 aiohttp
+PyJWT[cryptography]
 async_timeout
 firebase_admin
 google-cloud-firestore
