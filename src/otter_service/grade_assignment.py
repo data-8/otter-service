@@ -50,17 +50,24 @@ def download_autograder_materials(course, sops_path, secrets_file, save_path=Non
     installation_id = access_sops_keys.get(None, "github_app_installation_id", sops_path=sops_path, secrets_file=secrets_file)
     git_access_token = get_github_app_token(app_id, private_key, installation_id)
     autograder_materials_repo = access_sops_keys.get(course, "autograder_repo", sops_path=sops_path, secrets_file=secrets_file)
-    materials_url = f"https://x-access-token:{git_access_token}@{autograder_materials_repo}/archive/{branch}.tar.gz"
+    # GitHub App tokens require the Authorization header; embedding in the URL is not supported.
+    # repo format: "github.com/owner/repo" → extract "owner/repo" for the API path.
+    repo_path = "/".join(autograder_materials_repo.split("/")[-2:])
+    auth_headers = {
+        "Authorization": f"token {git_access_token}",
+        "Accept": "application/vnd.github+json",
+    }
+    materials_url = f"https://api.github.com/repos/{repo_path}/tarball/{branch}"
 
     download_path = "/tmp/materials.tar.gz"
     if save_path is None:
         save_path = "."
         download_path = "./materials.tar.gz"
-    r = requests.get(materials_url, stream=True)
+    r = requests.get(materials_url, headers=auth_headers, stream=True, allow_redirects=True)
     if r.status_code != 200:
         branch = "master"
-        materials_url = f"https://x-access-token:{git_access_token}@{autograder_materials_repo}/archive/{branch}.tar.gz"
-        r = requests.get(materials_url, stream=True)
+        materials_url = f"https://api.github.com/repos/{repo_path}/tarball/{branch}"
+        r = requests.get(materials_url, headers=auth_headers, stream=True, allow_redirects=True)
 
     if r.status_code == 200:
         with open(download_path, 'wb') as f:
@@ -68,8 +75,6 @@ def download_autograder_materials(course, sops_path, secrets_file, save_path=Non
         file = tarfile.open(download_path)
         file.extractall(save_path)
         file.close()
-        url_parts = materials_url.split("/")
-        branch = url_parts[-1].split(".")[0]
         file_name = autograder_materials_repo.split("/")[-1]
         extracted_path = f"{save_path}/{file_name}-{branch}"
         storage_path = f"{save_path}/{file_name}"
