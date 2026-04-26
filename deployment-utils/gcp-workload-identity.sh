@@ -37,6 +37,7 @@ elif [[ $WORKLOAD_ID_POOL_PROVIDERS_OUT =~ "NOT_FOUND" ]]; then
     --workload-identity-pool="otter-pool" \
     --display-name="Otter Provider" \
     --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
+    --attribute-condition="assertion.repository_owner=='edx-berkeley'" \
     --issuer-uri="https://token.actions.githubusercontent.com"
     echo Workload Identity Pools Prividers: github-actions: Created
 else
