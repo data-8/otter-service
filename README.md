@@ -2,7 +2,7 @@
 
 This repo contains a tornado flask app that accepts .ipynb files and grades them in a dockerized environment. Assuming you are running a Jupyterhub, you can ask Jupyterhub to run this otter-service as a service; you also have the option to run it in a stand alone manner. Grades are saved to a gcloud Cloud Firestore.
 
-A separate Jupyterhub extension, [otter_submit](https://github.com/data-8/otter_submit), presents a "Submit" button to the user in a notebook rendered in Jupyterhub. The button is configured to serialize and send the notebook to this otter-service as well as notify the the user of the successful submission.
+A separate Jupyterhub extension, [otter-submit](https://github.com/edx-berkeley/otter-submit), presents a "Submit" button to the user in a notebook rendered in Jupyterhub. The button is configured to serialize and send the notebook to this otter-service as well as notify the the user of the successful submission.
 
 # FireStore/Database setup
 
@@ -26,9 +26,9 @@ metadata:{
 ## Course Configuration
 Each course needs to provide two pieces of information to whomever is handling otter-service(right now: sean.smorris@berkeley.edu) that is deployed in the secrets file of
 this application
-1) A Github access key to the private materials repo.
+1) The name of repository where the autograder.zip files are kept. (e.g. github.com/edx-berkeley/88E-autograders)
 
-2) The name of repository where the autograder.zip files are kept. (e.g. github.com/data-8/materials-x22-private)
+The GitHub App (`OTTER_GH_APP_ID`, `OTTER_GH_APP_PRIVATE_KEY`, `OTTER_GH_APP_INSTALLATION_ID`) handles access to autograder repos — no personal access token needed.
 
 Finally, the private repository with the autograder.zip files needs to contain a file named: course-config.json. The file is structured like this:
 
@@ -59,18 +59,13 @@ Finally, the private repository with the autograder.zip files needs to contain a
         "lab01": "7abc0025c10f4b8ab123dbc88d34faaf",
         ...
 ```
-Here is an example of the folder structure in the materials-x22-private repo. 
-![Alt text](image.png)
-
 Note how the folder structure is mirrored in the course-config.json.
 
 If you are not posting grades to an LTI server, than you do not need to worry about this.
 
 
 ## Test files
-This gets tricky. The notebooks and the corresponding test files used by this service are of course connected. The files `Dockerfile` and `Dockerfile-dev` (used for local testing) download the current set of test files from the repository, `materials-x22-private`, for the `materials-x22` notebooks. If you bring in different notebooks, you would need to change the two dockerfiles to bring in the corresponding tests. 
-
-We assume a specific path to the test files. If you mirror the path found in the `materials-x22-private` repository, all will work well. If you change the path, then you must change the `solutions-path` variable in `grade_assignment.py`.
+The autograder zip files and test notebooks live in the per-course autograder repos (e.g. `edx-berkeley/88E-autograders`). The GitHub App fetches them at grading time — no Dockerfile changes needed when assignments change.
 
 ## Docker Image
 This just FYI. The Dockerfile pulls an image : 
@@ -83,18 +78,16 @@ This image is used by otter-grader to run the containerized grading.
 
 The system posts the grade back to the EdX via LTI. You need to have the `LTI_CONSUMER_KEY` and `LTI_CONSUMER_SECRET` defined and encoded via `sops` for this to work correctly. The secrets are in `otter-service/secrets/gke_key.yaml`
 
-# External installation with a re-direct from Jupyterhub
+# Deployment
 
-This is the current deployment configuration. We deploy the otter-service to gcloud and there is a re-direct from the Jupyterhub [configuration files](https://github.com/berkeley-dsep-infra/datahub/blob/7fed76f46e3636b3be225f1b149911aa9f1c6b1b/deployments/data8x/config/common.yaml#L22) in the [datahub repository](https://github.com/berkeley-dsep-infra/datahub/tree/staging/deployments/data8x/config) that passes authentication information to otter-service.
-
-Once the GKE cluster is created in gcloud, executing the `deploy.sh` file  deploys the service to the cloud. 
+otter-service runs in-cluster on the `edx` GKE cluster (GCP project `data8x-scratch`) in the `otter-prod` and `otter-staging` namespaces. The Helm chart lives in [edx-berkeley/edx-hub](https://github.com/edx-berkeley/edx-hub/tree/prod/otter-service). Deployment is via the `deploy-otter.yaml` GitHub Actions workflow in that repo — push to `prod` branch or trigger manually from the Actions tab.
 
 # Deployment Details:
 ## Rollback: 
 If we deploy and find problems the quickest way to rollback the deployment is to look at the revision history and undo the deployment by deploying to a previous revision number:
-- kubectl rollout history deployment otter-pod -n grader-k8-namespace
-- kubectl rollout history deployment otter-pod -n grader-k8-namespace --revision=# <-- to see details like the version of the image used
-- kubectl rollout undo deployment/otter-pod -n grader-k8-namespace --to-revision=#
+- kubectl rollout history deployment otter-pod -n otter-prod
+- kubectl rollout history deployment otter-pod -n otter-prod --revision=# <-- to see details like the version of the image used
+- kubectl rollout undo deployment/otter-pod -n otter-prod --to-revision=#
 
 ## CI/CD:
 If you push a tag in the standard form of a version number(XX.XX.XX), GitHub action creates a release from this tag, pushes the release to pypi.org, builds the docker image, pushes it google's image repository and deploys the new image into the GKE cluster.
@@ -102,8 +95,8 @@ If you push a tag in the standard form of a version number(XX.XX.XX), GitHub act
 ## pod size recommendations
 There is a vertical pod autoscaler deployed to recommend memory and cpu sizing to the otter-pod pods.
 You can see recommendations via either of these commands:
-- kubectl get vpa -n grader-k8-namespace
-- kubectl get vpa -n grader-k8-namespace --output yaml
+- kubectl get vpa -n otter-prod
+- kubectl get vpa -n otter-prod --output yaml
 
 It is called an autoscaler but I configured the resource to just recommend and not actually autoscale vertically.
 
@@ -112,7 +105,7 @@ A horizontal autoscale is configured to spin up a new pod when 80% of CPU reques
 of 10 pods allowed.
 
 You can see the status of the horizontal scaling via this command:
-- kubectl get hpa -n grader-k8-namespace
+- kubectl get hpa -n otter-prod
 
 # pytest
 Run ./deployment-utils/local/pytest.sh -- this will start the Firestore emulator and run the tests.
@@ -164,29 +157,14 @@ Notes:
 
 # Typical Workflow
 - Activate/create the python environment with conda or virtualenv using requirements/dev.txt
-- Make sure you are on dev branch
-- Make Changes
+- Make changes on a feature branch
 - Add tests to `tests` dir
 - Run Tests: sh deployment-utils/local/pytest.sh
 - Deploy Locally: sh deployment-utils/local/build.sh
 - Run Integration Test: python3 tests/integration.py local 88e(or 8x) -- see file
 - Check local firestore to see progress: http://localhost:4000/firestore
-- Build for deployment: sh deploy.sh build
-- Run Integration Test: python3 tests/integration.py dev 88e(or 8x) -- see file -- (NOTE: You need to have opened a secure connection via VPN with the `Library Access and Full Tunnel` Option selected - the other option is to run the test from an instance in the GCP project.)
-- Check (CloudFireStore) [https://console.firebase.google.com/u/1/project/data8x-scratch/firestore/databases/-default-/data/~2Fotter-dev-grades~2FBFPDyOiU8zSjQ1hcXfzp]
-- Push dev changes: git push origin dev
-- Check out staging: git checkout staging
-- Merge in dev: git merge --no-ff dev
-- Push staging changes: git push origin staging
-- Deployment: sh deploy.sh
-- Run Integration Test: python3 tests/integration.py staging 88e(or 8x) -- see file -- (NOTE: You need to have opened a secure connection via VPN with the `Library Access and Full Tunnel` Option selected - the other option is to run the test from an instance in the GCP project.)
-- Check (CloudFireStore) [https://console.firebase.google.com/u/1/project/data8x-scratch/firestore/databases/-default-/data/~2Fotter-dev-grades~2FBFPDyOiU8zSjQ1hcXfzp]
-- Check out staging: git checkout prod
-- Merge in prod: git merge --no-ff staging
-- Push prod changes: git push origin prod
-- Deployment: sh deploy.sh
-- Run Integration Test: python3 tests/integration.py prod 88e(or 8x) -- see file -- (NOTE: You need to have opened a secure connection via VPN with the `Library Access and Full Tunnel` Option selected - the other option is to run the test from an instance in the GCP project.)
-- Check (CloudFireStore) [https://console.firebase.google.com/u/1/project/data8x-scratch/firestore/databases/-default-/data/~2Fotter-dev-grades~2FBFPDyOiU8zSjQ1hcXfzp]
+- Open a PR to the `staging` branch in [edx-berkeley/edx-hub](https://github.com/edx-berkeley/edx-hub) to deploy to staging (requires `STAGING_ENABLED=true`)
+- Once verified on staging, open a PR from `staging` → `prod` in edx-hub to deploy to prod
 
 
 # Service installation in JupyterHub
