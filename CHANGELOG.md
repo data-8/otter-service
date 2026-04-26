@@ -1,3 +1,13 @@
+## 2.0.13
+
+#### Enhancements made
+
+- Moved repo from data-8 to edx-berkeley GitHub org
+- Updated WIF provider attribute condition to edx-berkeley
+- Updated gcp-workload-identity.sh to include attribute condition on provider create
+- Updated README: otter-submit link, deployment model, namespace names, GitHub App auth
+- Added grading-test-plan.md
+
 ## 2.0.12
 
 #### Bug fixes
