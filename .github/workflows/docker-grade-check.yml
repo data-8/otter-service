@@ -1,23 +1,16 @@
 name: Docker Grade Check
 
 on:
-  pull_request:
+  pull_request_target:
 
 jobs:
   docker-grade-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Debug GitHub App secrets
-        env:
-          GITHUB_APP_ID: ${{ secrets.OTTER_GH_APP_ID }}
-          GITHUB_APP_PRIVATE_KEY: ${{ secrets.OTTER_GH_APP_PRIVATE_KEY }}
-          GITHUB_APP_INSTALLATION_ID: ${{ secrets.OTTER_GH_APP_INSTALLATION_ID }}
-        run: |
-          echo "GITHUB_APP_ID length: ${#GITHUB_APP_ID}"
-          echo "GITHUB_APP_INSTALLATION_ID length: ${#GITHUB_APP_INSTALLATION_ID}"
-          echo "GITHUB_APP_PRIVATE_KEY length: ${#GITHUB_APP_PRIVATE_KEY}"
       - name: Authenticate to GCP
         run: |
           echo '${{ secrets.GCP_SA_KEY }}' > ${HOME}/gcloud-service-key.json
