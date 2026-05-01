@@ -25,7 +25,7 @@ RUN if [ -n "${OTTER_SERVICE_VERSION}" ]; then \
 # install docker cli
 ENV DOCKER_VERSION 5:24.0.4-1~ubuntu.22.04~jammy
 RUN apt-get update
-RUN apt-get install \
+RUN apt-get install -y \
     ca-certificates \
     curl \
     gnupg \
