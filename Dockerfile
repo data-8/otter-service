@@ -4,19 +4,14 @@ ARG OTTER_SERVICE_VERSION
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y software-properties-common && \
-    apt-get update && \
-    add-apt-repository -y ppa:longsleep/golang-backports
+    apt-get install -y python3 python3-pip curl
 
-RUN apt-get install -y python3 && \
-    apt-get install -y python3-pip && \
-    apt-get install -y curl && \
-    apt-get install -y golang
+# Install Go directly from upstream to avoid flaky Launchpad PPA network calls
+RUN curl -fsSL https://go.dev/dl/go1.21.13.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:/root/go/bin:$PATH"
 
-
-# install golang to support sops(python-sops does nto work with GCP KMS)
-RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
-    go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
+# install sops via go (python-sops does not work with GCP KMS)
+RUN go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
 COPY ./requirements/requirements.txt /opt/otter-service/requirements.txt
 RUN python3 -m pip install -r /opt/otter-service/requirements.txt
