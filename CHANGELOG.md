@@ -1,3 +1,9 @@
+## 2.0.15
+
+#### Enhancements made
+
+- Release workflow now opens a PR to edx-hub with a human-readable tag when a new version is published
+
 ## 2.0.14
 
 #### Maintenance
