@@ -1,13 +1,2 @@
-aiohttp
-PyJWT[cryptography]
-async_timeout
-firebase_admin
-google-cloud-firestore
-grpcio
-jupyterhub
-lxml
-oauthlib
-otter-grader
-pytz
-requests
-tornado
+-r requirements-base.txt
+-r requirements-grader.txt

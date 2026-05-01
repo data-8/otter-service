@@ -2,41 +2,49 @@ FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG OTTER_SERVICE_VERSION
 
+ENV SOPS_VERSION=v3.7.3
+ENV DOCKER_VERSION=5:24.0.4-1~ubuntu.22.04~jammy
+
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y python3 python3-pip curl
+    apt-get install -y \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates \
+        gnupg \
+        lsb-release && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Go directly from upstream to avoid flaky Launchpad PPA network calls
-RUN curl -fsSL https://go.dev/dl/go1.21.13.linux-amd64.tar.gz | tar -C /usr/local -xz
-ENV PATH="/usr/local/go/bin:/root/go/bin:$PATH"
+# Install sops from upstream release binary (avoids needing Go toolchain in the image)
+RUN curl -fsSL -o /usr/local/bin/sops \
+        "https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64" && \
+    chmod +x /usr/local/bin/sops
 
-# install sops via go (python-sops does not work with GCP KMS)
-RUN go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
+# Install docker cli from upstream apt repo
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+        | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get -y install docker-ce-cli=${DOCKER_VERSION} && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements/requirements.txt /opt/otter-service/requirements.txt
-RUN python3 -m pip install -r /opt/otter-service/requirements.txt
+# Stable deps (rarely change) — kept on a separate layer so otter-grader bumps don't reinstall them
+COPY ./requirements/requirements-base.txt /tmp/requirements-base.txt
+RUN python3 -m pip install --no-cache-dir -r /tmp/requirements-base.txt
+
+# Volatile deps (otter-grader changes more frequently with upstream issues)
+COPY ./requirements/requirements-grader.txt /tmp/requirements-grader.txt
+RUN python3 -m pip install --no-cache-dir -r /tmp/requirements-grader.txt
+
+# otter-service itself — last layer, rebuilds on every release
 COPY . /opt/otter-service-src/
 RUN if [ -n "${OTTER_SERVICE_VERSION}" ]; then \
-      python3 -m pip install otter-service==${OTTER_SERVICE_VERSION}; \
+      python3 -m pip install --no-cache-dir otter-service==${OTTER_SERVICE_VERSION}; \
     else \
-      python3 -m pip install /opt/otter-service-src/; \
+      python3 -m pip install --no-cache-dir /opt/otter-service-src/; \
     fi
-
-# install docker cli
-ENV DOCKER_VERSION 5:24.0.4-1~ubuntu.22.04~jammy
-RUN apt-get update
-RUN apt-get install -y \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
-RUN mkdir -p /etc/apt/keyrings
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-RUN echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-RUN apt-get update
-RUN apt-get -y install docker-ce-cli=${DOCKER_VERSION}
 
 WORKDIR /opt
 
