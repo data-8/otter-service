@@ -1,12 +1,12 @@
-# otter-nb service
+# otter-service
 
-This repo contains a tornado flask app that accepts .ipynb files and grades them in a dockerized environment. Assuming you are running a Jupyterhub, you can ask Jupyterhub to run this otter-service as a service; you also have the option to run it in a stand alone manner. Grades are saved to a gcloud Cloud Firestore.
+This repo contains a tornado flask app, intended to support Berkeley EdX Courses, that accepts .ipynb files and grades them in a dockerized environment. Assuming you are running a Jupyterhub, you can ask Jupyterhub to run this otter-service as a service; you also have the option to run it in a stand alone manner. Grades are logged to a gcloud Cloud Firestore as well as written back to Edx
 
-A separate Jupyterhub extension, [otter-submit](https://github.com/edx-berkeley/otter-submit), presents a "Submit" button to the user in a notebook rendered in Jupyterhub. The button is configured to serialize and send the notebook to this otter-service as well as notify the the user of the successful submission.
+A separate Jupyterlab extension, [otter-submit](https://github.com/edx-berkeley/otter-submit), presents a "Submit" button to the user in a notebook rendered in Jupyterlab. The button is configured to serialize and send the notebook to this otter-service as well as notify the the user of the successful submission.
 
 # FireStore/Database setup
 
-All grades are written to gcloud Cloud FireStore. During local testing with pytest, the tests remove the collection created after verifying the data was written. Local docker testing, does not delete the entries but the collection is called, otter-docker-local-test, and can be viewed and deleted by going to the gcloud console and navigating to Cloud Firebase or Cloud Firestore.
+All grades and the grading process is logged to gcloud Cloud FireStore. During local testing with pytest, the tests remove the collection created after verifying the data was written. Local docker testing, does not delete the entries but the collection is called, otter-docker-local-test, and can be viewed and deleted by going to the gcloud console and navigating to Cloud Firebase or Cloud Firestore.
 
 # Configuration
 
@@ -30,7 +30,7 @@ this application
 
 The GitHub App (`OTTER_GH_APP_ID`, `OTTER_GH_APP_PRIVATE_KEY`, `OTTER_GH_APP_INSTALLATION_ID`) handles access to autograder repos — no personal access token needed.
 
-Finally, the private repository with the autograder.zip files needs to contain a file named: course-config.json. The file is structured like this:
+Finally, the private repository where the autograder.zip files are stored needs to contain a file named: course-config.json. The file is structured like this:
 
 (1) course name which matches the course name in every notebooks metadata<br>
 (2) section which matches the section in every notebooks metadata - if only one section put '1'<br>
@@ -80,7 +80,7 @@ The system posts the grade back to the EdX via LTI. You need to have the `LTI_CO
 
 # Deployment
 
-otter-service runs in-cluster on the `edx` GKE cluster (GCP project `data8x-scratch`) in the `otter-prod` and `otter-staging` namespaces. The Helm chart lives in [edx-berkeley/edx-hub](https://github.com/edx-berkeley/edx-hub/tree/prod/otter-service). Deployment is via the `deploy-otter.yaml` GitHub Actions workflow in that repo — push to `prod` branch or trigger manually from the Actions tab.
+otter-service runs in-cluster on the `edx` GKE cluster (GCP project `data8x-scratch`) in the `otter-prod` and `otter-staging` namespaces. The Helm chart lives in [edx-berkeley/edx-hub](https://github.com/edx-berkeley/edx-hub/tree/prod/otter-service). Deployment is via the `deploy-otter.yaml` GitHub Actions workflow in the edx-hub repo — push to `prod` branch or trigger manually from the Actions tab.
 
 # Deployment Details:
 ## Rollback: 
@@ -89,23 +89,68 @@ If we deploy and find problems the quickest way to rollback the deployment is to
 - kubectl rollout history deployment otter-pod -n otter-prod --revision=# <-- to see details like the version of the image used
 - kubectl rollout undo deployment/otter-pod -n otter-prod --to-revision=#
 
-## CI/CD:
-If you push a tag in the standard form of a version number(XX.XX.XX), GitHub action creates a release from this tag, pushes the release to pypi.org, builds the docker image, pushes it google's image repository and deploys the new image into the GKE cluster.
+## CI/CD
 
-## pod size recommendations
-There is a vertical pod autoscaler deployed to recommend memory and cpu sizing to the otter-pod pods.
-You can see recommendations via either of these commands:
-- kubectl get vpa -n otter-prod
-- kubectl get vpa -n otter-prod --output yaml
+### Workflows
 
-It is called an autoscaler but I configured the resource to just recommend and not actually autoscale vertically.
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `python-app.yml` — `lint-and-build` job | `pull_request` targeting `main` | Runs `flake8` linting and validates the Docker build; does **not** require secrets |
+| `python-app.yml` — `test` job | `pull_request_target` targeting `main` | Authenticates to GCP via Workload Identity Federation, runs the full `pytest` suite against a real Firestore, and posts a reminder comment on the PR to tag after merge |
+| `docker-grade-check.yml` | `pull_request_target` | Builds and runs the Docker image, fetches test notebooks from autograder repos via GitHub App, and runs end-to-end grading tests; posts result to Slack |
+| `release.yml` | Push of a version tag (`X.Y.Z`) | Creates a GitHub release with auto-generated changelog, publishes the Python package to PyPI, builds and pushes the Docker image via Google Cloud Build, and opens a PR in [edx-hub](https://github.com/edx-berkeley/edx-hub) to update the `otter-srv` image tag |
 
-## pod horizontal scaling
-A horizontal autoscale is configured to spin up a new pod when 80% of CPU requested is utilized. There is maximum
-of 10 pods allowed.
+The `python-app.yml` workflow uses two separate triggers because `pull_request_target` is needed to safely access secrets for forks, while `pull_request` is used for the secret-free lint/build step.
 
-You can see the status of the horizontal scaling via this command:
-- kubectl get hpa -n otter-prod
+### Releasing a new version
+
+1. Merge all desired changes to `main`.
+2. Bump the version in `otter-service/__init__.py` and update `CHANGELOG.md`.
+3. Push a version tag:
+
+```bash
+git tag X.Y.Z
+git push upstream X.Y.Z. <-- assuming your fork is origin
+```
+
+CI will create the GitHub release, publish to PyPI, build the Docker image via Cloud Build, and open a PR in `edx-hub` to roll out the new image.
+
+### GCP Workload Identity (for the `test` job)
+
+The `test` job in `python-app.yml` authenticates to GCP without a service account key using Workload Identity Federation:
+- **Project:** `data8x-scratch` (project number `75088546496`)
+- **Pool/Provider:** `otter-pool / github-actions`
+- **Service account:** `otter-sa@data8x-scratch.iam.gserviceaccount.com`
+
+### Slack notifications
+
+CI results are posted to the **#edx-hub-ci** channel in the **UCB DS External** Slack workspace. To request access, contact a team member or reach out to sean.smorris@berkeley.edu.
+
+The following workflows post to Slack on every run (success or failure):
+- `docker-grade-check.yml` — on every PR
+
+### Repository variables and secrets
+
+The following must be configured on the repository (or the `edx-berkeley` organization) for CI to function:
+
+**Variables (`vars.*`):**
+
+| Name | Description |
+|---|---|
+| `EDX_IMAGE_BUILDER_APP_ID` | GitHub App ID used to open PRs in edx-hub |
+| `OTTER_AUTOGRADERS_APP_ID` | GitHub App ID for reading autograder repos |
+| `OTTER_AUTOGRADERS_INSTALLATION_ID` | Installation ID for the autograder GitHub App |
+
+**Secrets (`secrets.*`):**
+
+| Name | Description |
+|---|---|
+| `GCP_SA_KEY` | GCP service account JSON key (used by `docker-grade-check.yml`) |
+| `GCP_PROJECT` | GCP project ID (e.g., `data8x-scratch`) |
+| `OTTER_GH_APP_PRIVATE_KEY` | Private key for the GitHub App that reads autograder repos (shared with edx-user-image and xDevs) |
+| `PRIVATE_KEY_SECRET` | Private key for the GitHub App that opens PRs in edx-hub |
+| `SLACK_WEBHOOK_URL` | Incoming webhook URL for the `#edx-hub-ci` Slack channel |
+
 
 # pytest
 Run ./deployment-utils/local/pytest.sh -- this will start the Firestore emulator and run the tests.
