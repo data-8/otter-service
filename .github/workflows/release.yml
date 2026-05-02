@@ -69,7 +69,7 @@ jobs:
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          app-id: ${{ vars.EDX_IMAGE_BUILDER_APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY_SECRET }}
           owner: edx-berkeley
 
