@@ -41,9 +41,9 @@ jobs:
 
       - name: Fetch notebooks
         env:
-          GITHUB_APP_ID: ${{ secrets.OTTER_GH_APP_ID }}
+          GITHUB_APP_ID: ${{ vars.OTTER_AUTOGRADERS_APP_ID }}
           GITHUB_APP_PRIVATE_KEY: ${{ secrets.OTTER_GH_APP_PRIVATE_KEY }}
-          GITHUB_APP_INSTALLATION_ID: ${{ secrets.OTTER_GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OTTER_AUTOGRADERS_INSTALLATION_ID }}
         run: |
           python tests/fetch_test_notebooks.py --courses "88ex,88bx,88cx,8x"
 
