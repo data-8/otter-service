@@ -1,6 +1,5 @@
 import base64
 import json
-import sys
 import time
 import signal
 from functools import partial
@@ -40,31 +39,6 @@ firebase_admin.initialize_app(cred, {
     'projectId': os.environ.get("GCP_PROJECT_ID"),
     'storageBucket': 'data8x-scratch.appspot.com/submissions'
 })
-
-
-def _get_firestore_collection(collection):
-    db = firestore.client()
-    if os.getenv("ENVIRONMENT") == "otter-docker-local-test":
-        channel = grpc.insecure_channel("host.docker.internal:8080")
-        transport = firestore_grpc_transport.FirestoreGrpcTransport(channel=channel)
-        db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
-    return db.collection(collection)
-
-
-def _emit_local_log(level, message, data=None, err=None):
-    stream = sys.stderr if level in ("error", "warning") else sys.stdout
-    details = [f"[otter-service:{level}] {message}"]
-
-    if err is not None:
-        details.append(f"error={err}")
-
-    if data is not None:
-        try:
-            details.append(f"data={json.dumps(data, default=str)}")
-        except TypeError:
-            details.append(f"data={data}")
-
-    print(" | ".join(details), file=stream, flush=True)
 
 
 def write_grade(grade_info):
@@ -390,26 +364,26 @@ def get_timestamp():
 
 def write_logs(username, data, msg, trace, type, collection):
     if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
-        payload = {
-            'user': username,
-            'course': data["course"],
-            'section': data["section"],
-            'assignment': data["assignment"],
-            'message': msg,
-            'trace': trace,
-            'type': type,
-            'timestamp': get_timestamp()
-        }
         try:
-            return _get_firestore_collection(collection).add(payload)
+            db = firestore.client()
+            # this redirects FireStore to local emulator when local testing!
+            if os.getenv("ENVIRONMENT") == "otter-docker-local-test":
+                channel = grpc.insecure_channel("host.docker.internal:8080")
+                transport = firestore_grpc_transport.FirestoreGrpcTransport(channel=channel)
+                db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
+            data = {
+                'user': username,
+                'course': data["course"],
+                'section': data["section"],
+                'assignment': data["assignment"],
+                'message': msg,
+                'trace': trace,
+                'type': type,
+                'timestamp': get_timestamp()
+            }
+            return db.collection(collection).add(data)
         except Exception as err:
-            _emit_local_log(
-                "error" if type == "error" else "warning",
-                f"Skipping Firestore log write for {type}",
-                data=payload,
-                err=err,
-            )
-            return None
+            raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 
 def log_info_csv(username, data, msg):
@@ -454,26 +428,19 @@ def log_tornado_issues(msg, type):
 
     :param msg: message about error
     """
-    st = str(traceback.format_exc())
-    st = st if "None" not in st else None
-    data = {
-        'message': msg,
-        'trace': st,
-        'type': type,
-        'timestamp': get_timestamp()
-    }
-
     try:
-        collection = f'{os.environ.get("ENVIRONMENT")}-tornado-logs'
-        return _get_firestore_collection(collection).add(data)
+        st = str(traceback.format_exc())
+        st = st if "None" not in st else None
+        db = firestore.client()
+        data = {
+            'message': msg,
+            'trace': st,
+            'type': type,
+            'timestamp': get_timestamp()
+        }
+        return db.collection(f'{os.environ.get("ENVIRONMENT")}-tornado-logs').add(data)
     except Exception as err:
-        _emit_local_log(
-            "error" if type == "error" else "warning",
-            f"Skipping Firestore tornado log for {type}: {msg}",
-            data=data,
-            err=err,
-        )
-        return None
+        raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 
 def save_submission(username, data, notebook):
@@ -489,22 +456,14 @@ def save_submission(username, data, notebook):
         - autograder_subpath: the path in the repo to autograder.zip
     :notebook: the cells in the notebook!
     """
-    payload = dict(data)
-    payload['user'] = username
-    payload['notebook'] = notebook
-    payload['timestamp'] = get_timestamp()
-
     try:
-        collection = f'{os.environ.get("ENVIRONMENT")}-submissions'
-        return _get_firestore_collection(collection).add(payload)
+        db = firestore.client()
+        data['user'] = username
+        data['notebook'] = notebook
+        data['timestamp'] = get_timestamp()
+        return db.collection(f'{os.environ.get("ENVIRONMENT")}-submissions').add(data)
     except Exception as err:
-        _emit_local_log(
-            "warning",
-            f"Skipping Firestore submission write for {username}",
-            data=payload,
-            err=err,
-        )
-        return None
+        raise Exception(f"Error inserting {type} log into Google FireStore: {data}") from err
 
 
 def sig_handler(server, sig, frame):
