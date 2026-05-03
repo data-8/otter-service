@@ -1,3 +1,9 @@
+## 2.0.16
+
+#### Enhancements made
+
+- removed dependency to firestore logging; although still logs if credentials correct
+
 ## 2.0.15
 
 #### Enhancements made
