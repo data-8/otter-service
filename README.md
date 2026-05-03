@@ -28,7 +28,7 @@ Each course needs to provide two pieces of information to whomever is handling o
 this application
 1) The name of repository where the autograder.zip files are kept. (e.g. github.com/edx-berkeley/88E-autograders)
 
-The GitHub App (`OTTER_GH_APP_ID`, `OTTER_GH_APP_PRIVATE_KEY`, `OTTER_GH_APP_INSTALLATION_ID`) handles access to autograder repos — no personal access token needed.
+The GitHub App (`COURSE_CONTENT_READER_APP_ID`, `COURSE_CONTENT_READER_PRIVATE_KEY`, `COURSE_CONTENT_READER_INSTALLATION_ID`) handles access to autograder/student/solution repos — no personal access token needed.
 
 Finally, the private repository where the autograder.zip files are stored needs to contain a file named: course-config.json. The file is structured like this:
 

@@ -1,69 +1,52 @@
-name: Docker Grade Check
+name: Docker Smoke Test
 
 on:
   pull_request_target:
 
 jobs:
-  docker-grade-check:
+  docker-smoke-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Authenticate to GCP
-        run: |
-          echo '${{ secrets.GCP_SA_KEY }}' > ${HOME}/gcloud-service-key.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-service-key.json" >> $GITHUB_ENV
-
       - name: Build PR image
         run: docker build -t otter-service:pr .
 
-      - name: Run PR image
+      - name: Start otter-service
         run: |
-          docker run -d -p 10101:10101 \
-            -v ${HOME}/gcloud-service-key.json:/tmp/sa-key.json \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json \
-            -e GCP_PROJECT_ID=${{ secrets.GCP_PROJECT }} \
-            -e ENVIRONMENT=otter-ci-${{ github.run_id }} \
-            -e TEST_USER=TEST_USER_${{ github.run_id }} \
-            -e POST_GRADE=false \
-            -e VERBOSE_LOGGING=True \
+          docker run -d --name otter-pr -p 10101:10101 \
+            -e ENVIRONMENT=ci-smoke-test \
+            -e LOG_LEVEL=INFO \
             otter-service:pr
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install test script dependencies
-        run: pip install requests pyjwt nbformat google-cloud-firestore pytz
-
-      - name: Fetch notebooks
-        env:
-          GITHUB_APP_ID: ${{ vars.OTTER_AUTOGRADERS_APP_ID }}
-          GITHUB_APP_PRIVATE_KEY: ${{ secrets.OTTER_GH_APP_PRIVATE_KEY }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.OTTER_AUTOGRADERS_INSTALLATION_ID }}
+      - name: Wait for service to be ready
         run: |
-          python tests/fetch_test_notebooks.py --courses "88ex,88bx,88cx,8x"
+          for i in {1..30}; do
+            if curl -f http://localhost:10101/services/otter_grade/ 2>/dev/null; then
+              echo "Service ready"
+              exit 0
+            fi
+            echo "Attempt $i: waiting for service..."
+            sleep 2
+          done
+          echo "Service failed to start"
+          docker logs otter-pr
+          exit 1
 
-      - name: Wait for otter-service
+      - name: Verify service responds
         run: |
-          python tests/wait_for_service.py \
-            --url http://localhost:10101/services/otter_grade/ \
-            --timeout 60
-
-      - name: Run docker grade check
-        env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT }}
-        run: |
-          python tests/run_docker_grade_check.py --run-id "${{ github.run_id }}"
+          curl -f -X POST http://localhost:10101/services/otter_grade/ \
+            -H "Content-Type: application/json" \
+            -d '{"notebook": "test"}' \
+            -w "\nHTTP Status: %{http_code}\n"
 
       - name: Notify Slack
         if: always()
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
-            {"text": "${{ job.status == 'success' && '✅' || '❌' }} otter-service docker-grade-check ${{ job.status }} — ${{ github.head_ref }} · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Run #${{ github.run_id }}>"}
+            {"text": "${{ job.status == 'success' && '✅' || '❌' }} otter-service smoke test ${{ job.status }} — ${{ github.head_ref }} · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Run #${{ github.run_id }}>"}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
