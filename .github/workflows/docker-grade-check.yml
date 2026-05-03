@@ -11,12 +11,20 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Authenticate to GCP
+        run: |
+          echo '${{ secrets.GCP_SA_KEY }}' > ${HOME}/gcloud-service-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-service-key.json" >> $GITHUB_ENV
+
       - name: Build PR image
         run: docker build -t otter-service:pr .
 
       - name: Start otter-service
         run: |
           docker run -d --name otter-pr -p 10101:10101 \
+            -v ${HOME}/gcloud-service-key.json:/tmp/sa-key.json \
+            -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json \
+            -e GCP_PROJECT_ID=${{ secrets.GCP_PROJECT }} \
             -e ENVIRONMENT=ci-smoke-test \
             -e LOG_LEVEL=INFO \
             otter-service:pr
