@@ -1,3 +1,22 @@
+## 2.0.18
+
+#### Bug fixes
+
+- Fix `sops_path` mismatch with Dockerfile install location — the access_sops_keys
+  helper was looking for sops at `/root/go/bin/sops` but the Dockerfile installs it
+  to `/usr/local/bin/sops`, breaking per-course key decryption (which in turn made
+  otter unable to fetch the autograder repos and produced incorrect grades for
+  every submission). Originally bumped to 2.0.17 in PR #31 but never tagged; 2.0.18
+  ships the same fix with a proper release.
+
+#### CI improvements
+
+- Per-run Firestore collection isolation for the Docker Smoke Test so concurrent
+  CI runs don't interfere with each other; collections auto-cleaned at end of run.
+- Don't treat 5xx response as a smoke-test failure — POSTing intentional garbage
+  to verify the handler is reachable returns 500 by design, which `curl -f` was
+  treating as a hard failure.
+
 ## 2.0.16
 
 #### Enhancements made
