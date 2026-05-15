@@ -43,12 +43,26 @@ jobs:
           docker logs otter-pr
           exit 1
 
+      # Verify the POST endpoint is alive. We don't send a real notebook
+      # payload — `{"notebook":"test"}` is intentionally garbage and the
+      # service will (correctly) return 500. The point of this step is to
+      # confirm the POST handler is reachable and returns *some* HTTP
+      # response, not that grading works with arbitrary input. `-f` is
+      # dropped so 5xx responses aren't treated as curl failures. Real
+      # end-to-end grading is tested in edx-hub's smoke-test job, which
+      # submits properly-shaped notebooks through KEDA.
       - name: Verify service responds
         run: |
-          curl -f -X POST http://localhost:10101/services/otter_grade/ \
+          STATUS=$(curl -s -o /tmp/body -w "%{http_code}" \
+            -X POST http://localhost:10101/services/otter_grade/ \
             -H "Content-Type: application/json" \
-            -d '{"notebook": "test"}' \
-            -w "\nHTTP Status: %{http_code}\n"
+            -d '{"notebook": "test"}')
+          echo "HTTP Status: ${STATUS}"
+          echo "Body:"; cat /tmp/body; echo
+          if ! [[ "${STATUS}" =~ ^[0-9]{3}$ ]]; then
+            echo "Service did not return an HTTP response (status: '${STATUS}')"
+            exit 1
+          fi
 
       - name: Clean up Firestore CI collections
         if: always()
